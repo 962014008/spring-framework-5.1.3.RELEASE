@@ -19,6 +19,11 @@ package org.springframework.context.annotation;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 import java.util.regex.Pattern;
+
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -38,9 +43,6 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 /**
  * Parser for the {@code <context:component-scan/>} element.
@@ -75,7 +77,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	private static final String FILTER_EXPRESSION_ATTRIBUTE = "expression";
 
 
-	/**
+	/*
 	* 1、扫描路径。.class后缀的文件
 	* 2、要判断类上是否有注解
 	* 3、GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
@@ -110,7 +112,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			useDefaultFilters = Boolean.valueOf(element.getAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE));
 		}
 
-		//创建注解扫描器
+		//创建注解的扫描器
 		// Delegate bean definition registration to scanner class.
 		ClassPathBeanDefinitionScanner scanner = createScanner(parserContext.getReaderContext(), useDefaultFilters);
 		scanner.setBeanDefinitionDefaults(parserContext.getDelegate().getBeanDefinitionDefaults());
@@ -173,6 +175,15 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		readerContext.fireComponentRegistered(compositeDef);
 	}
 
+	protected void parseBeanNameGenerator(Element element, ClassPathBeanDefinitionScanner scanner) {
+		if (element.hasAttribute(NAME_GENERATOR_ATTRIBUTE)) {
+			BeanNameGenerator beanNameGenerator = (BeanNameGenerator) instantiateUserDefinedStrategy(
+					element.getAttribute(NAME_GENERATOR_ATTRIBUTE), BeanNameGenerator.class,
+					scanner.getResourceLoader().getClassLoader());
+			scanner.setBeanNameGenerator(beanNameGenerator);
+		}
+	}
+
 	protected void parseScope(Element element, ClassPathBeanDefinitionScanner scanner) {
 		// Register ScopeMetadataResolver if class name provided.
 		if (element.hasAttribute(SCOPE_RESOLVER_ATTRIBUTE)) {
@@ -200,15 +211,6 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			else {
 				throw new IllegalArgumentException("scoped-proxy only supports 'no', 'interfaces' and 'targetClass'");
 			}
-		}
-	}
-
-	protected void parseBeanNameGenerator(Element element, ClassPathBeanDefinitionScanner scanner) {
-		if (element.hasAttribute(NAME_GENERATOR_ATTRIBUTE)) {
-			BeanNameGenerator beanNameGenerator = (BeanNameGenerator) instantiateUserDefinedStrategy(
-					element.getAttribute(NAME_GENERATOR_ATTRIBUTE), BeanNameGenerator.class,
-					scanner.getResourceLoader().getClassLoader());
-			scanner.setBeanNameGenerator(beanNameGenerator);
 		}
 	}
 

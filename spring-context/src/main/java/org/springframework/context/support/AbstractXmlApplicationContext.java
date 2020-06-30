@@ -80,23 +80,22 @@ public abstract class AbstractXmlApplicationContext extends org.springframework.
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
-		// 第一个委托模式，把xml的读取工作委托给XmlBeanDefinitionReader(beanFactory)实例去完成
+		//创建xml的解析器，这里是一个委托模式
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
 		// resource loading environment.
 		beanDefinitionReader.setEnvironment(this.getEnvironment());
 
-		// 这里传一个this进去，因为ApplicationContext是实现了ResourceLoader接口的
+		//这里传一个this进去，因为ApplicationContext是实现了ResourceLoader接口的
 		beanDefinitionReader.setResourceLoader(this);
 		beanDefinitionReader.setEntityResolver(new ResourceEntityResolver(this));
 
 		// Allow a subclass to provide custom initialization of the reader,
 		// then proceed with actually loading the bean definitions.
-		// 设置默认打开xml校验，可以在子类中调整
 		initBeanDefinitionReader(beanDefinitionReader);
 
-		// 主要看这个方法，重要程度：5
+		//主要看这个方法  重要程度 5
 		loadBeanDefinitions(beanDefinitionReader);
 	}
 

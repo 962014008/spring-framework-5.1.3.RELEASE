@@ -16,17 +16,23 @@
 
 package org.springframework.context.support;
 
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.Aware;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.beans.factory.config.EmbeddedValueResolver;
-import org.springframework.context.*;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.ApplicationEventPublisherAware;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.EmbeddedValueResolverAware;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.context.MessageSourceAware;
+import org.springframework.context.ResourceLoaderAware;
 import org.springframework.lang.Nullable;
 import org.springframework.util.StringValueResolver;
-
-import java.security.AccessControlContext;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 
 /**
  * {@link org.springframework.beans.factory.config.BeanPostProcessor}
@@ -43,6 +49,7 @@ import java.security.PrivilegedAction;
  * @author Juergen Hoeller
  * @author Costin Leau
  * @author Chris Beams
+ * @since 10.10.2003
  * @see org.springframework.context.EnvironmentAware
  * @see org.springframework.context.EmbeddedValueResolverAware
  * @see org.springframework.context.ResourceLoaderAware
@@ -50,7 +57,6 @@ import java.security.PrivilegedAction;
  * @see org.springframework.context.MessageSourceAware
  * @see org.springframework.context.ApplicationContextAware
  * @see org.springframework.context.support.AbstractApplicationContext#refresh()
- * @since 10.10.2003
  */
 class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
@@ -73,9 +79,10 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 	public Object postProcessBeforeInitialization(final Object bean, String beanName) throws BeansException {
 		AccessControlContext acc = null;
 
-		if (System.getSecurityManager() != null && (bean instanceof EnvironmentAware
-				|| bean instanceof EmbeddedValueResolverAware || bean instanceof ResourceLoaderAware
-				|| bean instanceof ApplicationEventPublisherAware || bean instanceof MessageSourceAware || bean instanceof ApplicationContextAware)) {
+		if (System.getSecurityManager() != null &&
+				(bean instanceof EnvironmentAware || bean instanceof EmbeddedValueResolverAware ||
+						bean instanceof ResourceLoaderAware || bean instanceof ApplicationEventPublisherAware ||
+						bean instanceof MessageSourceAware || bean instanceof ApplicationContextAware)) {
 			acc = this.applicationContext.getBeanFactory().getAccessControlContext();
 		}
 
@@ -84,7 +91,8 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 				invokeAwareInterfaces(bean);
 				return null;
 			}, acc);
-		} else {
+		}
+		else {
 			invokeAwareInterfaces(bean);
 		}
 

@@ -177,12 +177,12 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
 
-						// 默认标签解析
+						//默认标签解析
 						parseDefaultElement(ele, delegate);
 					}
 					else {
 
-						// 自定义标签解析
+						//自定义标签解析
 						delegate.parseCustomElement(ele);
 					}
 				}
