@@ -56,10 +56,7 @@ import org.springframework.context.ApplicationEventPublisher;
  * @see ConfigurableApplicationContext
  * @see org.springframework.beans.factory.BeanFactory
  * @see org.springframework.core.io.ResourceLoader
- *
  */
-// LZT-TODO: ApplicationContext类是spring容器启动过程的大管家（EnvironmentCapable支持多环境，ListableBeanFactory支持BeanFactory的获取Bean或者BeanType，MessageSource
-//  支持国际化，ApplicationEventPublisher支持发布事件，ResourcePatternResolver支持资源文件加载）
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
 		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
 
