@@ -51,7 +51,7 @@ public class InjectionMetadata {
 	private final Class<?> targetClass;
 
 	/**
-	 * �?有的注入对象，包括属性�?�setter方法以及配置方法都会被扫描并保存到这个集合中
+	 * 所有的注入对象，包括属性、setter方法以及配置方法都会被扫描并保存到这个集合中
 	 * InjectedElement有两种实现分别是：AutowiredFieldElement（对field的包装）和AutowiredMethodElement（对method的包装）
 	 */
 	private final Collection<InjectedElement> injectedElements;
@@ -85,7 +85,7 @@ public class InjectionMetadata {
 	 * 遍历上面的injectedElements集合调用元素的注入方法，调用各自具体实现类的inject方法执行注入操作
 	 */
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
-		// �?要执行依赖注入的filed和method元素
+		// 需要执行依赖注入的filed和method元素
 		Collection<InjectedElement> checkedElements = this.checkedElements;
 		Collection<InjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
@@ -97,7 +97,7 @@ public class InjectionMetadata {
 					Field field = (Field) element.member;
 					System.out.println("==IOC/DI===beanName==" + beanName + "==field[" + field.getName() + "]-> getBean(" + field.getName() + ")");
 				}
-				// 注入到目标bean�?
+				// 注入到目标bean中
 				element.inject(target, beanName, pvs);
 			}
 		}

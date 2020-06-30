@@ -220,11 +220,11 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
-				//把字符串类型的xml文件路径，形如：classpath*:user/**/*-context.xml,转换成Resource对象类型，其实就是用�?
-				//的方式加载配置文件，然后封装成Resource对象，不重要，可以不�?
+				//把字符串类型的xml文件路径，形如：classpath*:user/**/*-context.xml,转换成Resource对象类型，其实就是用流
+				//的方式加载配置文件，然后封装成Resource对象，不重要，可以不看
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
 
-				//主要看这个方�? ** 重要程度 5
+				//主要看这个方法 ** 重要程度 5
 				int count = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					Collections.addAll(actualResources, resources);
