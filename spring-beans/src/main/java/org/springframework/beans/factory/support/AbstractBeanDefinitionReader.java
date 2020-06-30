@@ -16,13 +16,8 @@
 
 package org.springframework.beans.factory.support;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
 import org.springframework.beans.factory.BeanDefinitionStoreException;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.EnvironmentCapable;
@@ -33,6 +28,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * Abstract base class for bean definition readers which implement
@@ -185,7 +184,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 		Assert.notNull(resources, "Resource array must not be null");
 		int count = 0;
 		for (Resource resource : resources) {
-			//模板设计模式，调用到子类中的方法
+			// 妯℃澘璁捐妯″紡锛岃皟鐢ㄥ埌瀛愮被涓殑鏂规硶
 			count += loadBeanDefinitions(resource);
 		}
 		return count;
@@ -221,11 +220,11 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
-				//把字符串类型的xml文件路径，形如：classpath*:user/**/*-context.xml,转换成Resource对象类型，其实就是用流
-				//的方式加载配置文件，然后封装成Resource对象，不重要，可以不看
+				//鎶婂瓧绗︿覆绫诲瀷鐨剎ml鏂囦欢璺緞锛屽舰濡傦細classpath*:user/**/*-context.xml,杞崲鎴怰esource瀵硅薄绫诲瀷锛屽叾瀹炲氨鏄敤娴?
+				//鐨勬柟寮忓姞杞介厤缃枃浠讹紝鐒跺悗灏佽鎴怰esource瀵硅薄锛屼笉閲嶈锛屽彲浠ヤ笉鐪?
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
 
-				//主要看这个方法 ** 重要程度 5
+				//涓昏鐪嬭繖涓柟娉? ** 閲嶈绋嬪害 5
 				int count = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					Collections.addAll(actualResources, resources);
@@ -258,7 +257,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	public int loadBeanDefinitions(String... locations) throws BeanDefinitionStoreException {
 		Assert.notNull(locations, "Location array must not be null");
 		int count = 0;
-		//配置文件有多个，加载多个配置文件
+		//閰嶇疆鏂囦欢鏈夊涓紝鍔犺浇澶氫釜閰嶇疆鏂囦欢
 		for (String location : locations) {
 			count += loadBeanDefinitions(location);
 		}

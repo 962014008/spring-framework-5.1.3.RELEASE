@@ -32,4 +32,12 @@ dependencies {
 	testRuntime("javax.xml.bind:jaxb-api:2.3.1")
 	testRuntime("org.glassfish:javax.el:3.0.1-b08")
 	testRuntime("org.javamoney:moneta:1.3")
+	// 新增
+	//导入slf4j依赖包，导入下面的两个包，其中logback-classic会导入slf4j包到项目的ExternalLibraries。 logback-core知识可以百度。
+//	compile('ch.qos.logback:logback-core:1.2.3')
+	compile('ch.qos.logback:logback-classic:1.2.3')
+	annotationProcessor 'org.projectlombok:lombok:1.18.2'
+	compileOnly 'org.projectlombok:lombok:1.18.2'
+	testAnnotationProcessor 'org.projectlombok:lombok:1.18.2'
+	testCompileOnly 'org.projectlombok:lombok:1.18.2'
 }

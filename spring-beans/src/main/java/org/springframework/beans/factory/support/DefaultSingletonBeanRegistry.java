@@ -16,26 +16,15 @@
 
 package org.springframework.beans.factory.support;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.springframework.beans.factory.BeanCreationException;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.BeanCurrentlyInCreationException;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.ObjectFactory;
+import org.springframework.beans.factory.*;
 import org.springframework.beans.factory.config.SingletonBeanRegistry;
 import org.springframework.core.SimpleAliasRegistry;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Generic registry for shared bean instances, implementing the
@@ -132,12 +121,13 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
-			//一级缓存
+			// 一级缓存
 			this.singletonObjects.put(beanName, singletonObject);
-			//三级缓存
+			// 三级缓存
 			this.singletonFactories.remove(beanName);
-			//二级缓存
+			// 二级缓存
 			this.earlySingletonObjects.remove(beanName);
+			// 已经注册的单例bean的名称集合，按照注册顺序存放
 			this.registeredSingletons.add(beanName);
 		}
 	}
@@ -178,26 +168,26 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-		//根据beanName从缓存中拿实例
-		//先从一级缓存拿
+		// 先从一级缓存拿
 		Object singletonObject = this.singletonObjects.get(beanName);
-		//如果bean还正在创建，还没创建完成，其实就是堆内存有了，属性还没有DI依赖注入
+		// 如果bean还正在创建，还没创建完成（堆内存已经存在，但是属性还没有DI依赖注入）
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			synchronized (this.singletonObjects) {
-				//从二级缓存中拿
+				// 从二级缓存中拿
 				singletonObject = this.earlySingletonObjects.get(beanName);
 
-				//如果还拿不到，并且允许bean提前暴露
+				// 如果还拿不到，并且允许bean提前暴露
 				if (singletonObject == null && allowEarlyReference) {
-					//从三级缓存中拿到对象工厂
+					// 从三级缓存中拿到对象工厂
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
-						//从工厂中拿到对象
+						// 从匿名类工厂方法中拿到对象
 						singletonObject = singletonFactory.getObject();
-						//升级到二级缓存
-						System.out.println("======get instance from 3 level cache->beanName->" + beanName + "->value->" + singletonObject );
+						// 升级到二级缓存（主要为了提高效率）
+						// 可以避免循环依赖中再次通过匿名类工厂方法获取bean这一复杂流程（遍历所有的后置处理器、判断是否创建代理对象，见getEarlyBeanReference方法）
+						System.out.println("======get instance from 3 level cache->beanName->" + beanName + "->value->" + singletonObject);
 						this.earlySingletonObjects.put(beanName, singletonObject);
-						//删除三级缓存
+						// 删除三级缓存
 						this.singletonFactories.remove(beanName);
 					}
 				}
@@ -217,19 +207,19 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	public Object getSingleton(String beanName, ObjectFactory<?> singletonFactory) {
 		Assert.notNull(beanName, "Bean name must not be null");
 		synchronized (this.singletonObjects) {
-			//如果缓存中有，则直接返回
+			// 如果一级缓存中有，则直接返回
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
 				if (this.singletonsCurrentlyInDestruction) {
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +
-							"(Do not request a bean from a BeanFactory in a destroy method implementation!)");
+									"(Do not request a bean from a BeanFactory in a destroy method implementation!)");
 				}
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
 
-				//把beanName添加到singletonsCurrentlyInCreation Set容器中，在这个集合里面的bean都是正在实例化的bean
+				// 把beanName添加到singletonsCurrentlyInCreation Set容器中，在这个集合里面的bean都是正在实例化的bean
 				beforeSingletonCreation(beanName);
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
@@ -237,36 +227,35 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
-					//如果这里有返回值，就代表这个bean已经结束创建了，已经完全创建成功
+					// 如果这里有返回值，就代表这个bean已经完全创建成功（可以彻底结束创建了）
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
-				}
-				catch (IllegalStateException ex) {
+				} catch (IllegalStateException ex) {
 					// Has the singleton object implicitly appeared in the meantime ->
 					// if yes, proceed with it since the exception indicates that state.
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
 						throw ex;
 					}
-				}
-				catch (BeanCreationException ex) {
+				} catch (BeanCreationException ex) {
 					if (recordSuppressedExceptions) {
 						for (Exception suppressedException : this.suppressedExceptions) {
 							ex.addRelatedCause(suppressedException);
 						}
 					}
 					throw ex;
-				}
-				finally {
+				} finally {
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
-					//bean创建完成后singletonsCurrentlyInCreation要删除该bean
+					// bean创建过程结束后（不一定创建成功了），singletonsCurrentlyInCreation Set容器要删除该bean
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
 					System.out.println("====beanName==" + beanName + "===instance end====");
-					//创建对象成功时，把对象缓存到singletonObjects缓存中,bean创建完成时放入一级缓存
+					// bean已经完全创建成功
+					// 把对象缓存到一级缓存singletonObjects和registeredSingletons（已经注册的单例bean的名称集合，按照注册顺序存放）中
+					// 并将对象从二级和三级缓存中删除
 					addSingleton(beanName, singletonObject);
 				}
 			}
@@ -326,8 +315,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		Assert.notNull(beanName, "Bean name must not be null");
 		if (!inCreation) {
 			this.inCreationCheckExclusions.add(beanName);
-		}
-		else {
+		} else {
 			this.inCreationCheckExclusions.remove(beanName);
 		}
 	}
@@ -357,7 +345,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @see #isSingletonCurrentlyInCreation
 	 */
 	protected void beforeSingletonCreation(String beanName) {
-		//把beanName添加到singletonsCurrentlyInCreation Set容器中，在这个集合里面的bean都是正在实例化的bean
+		// 把beanName添加到singletonsCurrentlyInCreation Set容器中，在这个集合里面的bean都是正在实例化的bean
 		if (!this.inCreationCheckExclusions.contains(beanName) && !this.singletonsCurrentlyInCreation.add(beanName)) {
 			throw new BeanCurrentlyInCreationException(beanName);
 		}
@@ -592,8 +580,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		if (bean != null) {
 			try {
 				bean.destroy();
-			}
-			catch (Throwable ex) {
+			} catch (Throwable ex) {
 				if (logger.isInfoEnabled()) {
 					logger.info("Destroy method on bean with name '" + beanName + "' threw an exception", ex);
 				}
@@ -614,7 +601,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 		// Remove destroyed bean from other beans' dependencies.
 		synchronized (this.dependentBeanMap) {
-			for (Iterator<Map.Entry<String, Set<String>>> it = this.dependentBeanMap.entrySet().iterator(); it.hasNext();) {
+			for (Iterator<Map.Entry<String, Set<String>>> it = this.dependentBeanMap.entrySet().iterator(); it.hasNext(); ) {
 				Map.Entry<String, Set<String>> entry = it.next();
 				Set<String> dependenciesToClean = entry.getValue();
 				dependenciesToClean.remove(beanName);
@@ -635,6 +622,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * should <i>not</i> have their own mutexes involved in singleton creation,
 	 * to avoid the potential for deadlocks in lazy-init situations.
 	 */
+	@Override
 	public final Object getSingletonMutex() {
 		return this.singletonObjects;
 	}
