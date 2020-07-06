@@ -71,28 +71,26 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 
 	private static final String FILTER_EXPRESSION_ATTRIBUTE = "expression";
 
-
 	/*
-	* 1、扫描路径。.class后缀的文件
-	* 2、要判断类上是否有注解
-	* 3、GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
-    *    genericBeanDefinition.setBeanClass(BeanClass.class);
-    * 4、完成beanDefinition注册
-	* */
+	 * 1、扫描路径中.class后缀的文件
+	 * 2、要判断类上是否有注解
+	 * 3、GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
+	 *    genericBeanDefinition.setBeanClass(BeanClass.class);
+	 * 4、完成beanDefinition注册
+	 */
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
-		//获取basePackage属性
+		// 获取basePackage属性
 		String basePackage = element.getAttribute(BASE_PACKAGE_ATTRIBUTE);
 		basePackage = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(basePackage);
-		//可以用逗号分开
-		String[] basePackages = StringUtils.tokenizeToStringArray(basePackage,
-				ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+		// 可以用逗号分开
+		String[] basePackages = StringUtils.tokenizeToStringArray(basePackage, ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
 
-		//创建注解扫描器
+		// 创建注解扫描器
 		// Actually scan for bean definitions and register them.
 		ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
-		//扫描并把扫描的类封装成beanDefinition对象  核心方法，重要程度 5
+		// 核心方法，扫描并把扫描的类封装成beanDefinition对象，重要程度：5
 		Set<BeanDefinitionHolder> beanDefinitions = scanner.doScan(basePackages);
 		registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
 
@@ -100,14 +98,14 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	}
 
 	protected ClassPathBeanDefinitionScanner configureScanner(ParserContext parserContext, Element element) {
-		//使用默认的过滤器
+		// 使用默认的过滤器
 		boolean useDefaultFilters = true;
-		//@Service @Component  默认filter
+		// @Service @Component  默认filter
 		if (element.hasAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE)) {
 			useDefaultFilters = Boolean.valueOf(element.getAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE));
 		}
 
-		//创建注解扫描器
+		// 创建注解扫描器
 		// Delegate bean definition registration to scanner class.
 		ClassPathBeanDefinitionScanner scanner = createScanner(parserContext.getReaderContext(), useDefaultFilters);
 		scanner.setBeanDefinitionDefaults(parserContext.getDelegate().getBeanDefinitionDefaults());
@@ -119,15 +117,13 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 
 		try {
 			parseBeanNameGenerator(element, scanner);
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());
 		}
 
 		try {
 			parseScope(element, scanner);
-		}
-		catch (Exception ex) {
+		} catch (Exception ex) {
 			parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());
 		}
 
@@ -141,9 +137,7 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 				readerContext.getEnvironment(), readerContext.getResourceLoader());
 	}
 
-	protected void registerComponents(
-			XmlReaderContext readerContext, Set<BeanDefinitionHolder> beanDefinitions, Element element) {
-
+	protected void registerComponents(XmlReaderContext readerContext, Set<BeanDefinitionHolder> beanDefinitions, Element element) {
 		Object source = readerContext.extractSource(element);
 		CompositeComponentDefinition compositeDef = new CompositeComponentDefinition(element.getTagName(), source);
 
@@ -157,11 +151,9 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			annotationConfig = Boolean.valueOf(element.getAttribute(ANNOTATION_CONFIG_ATTRIBUTE));
 		}
 		if (annotationConfig) {
-
-			//这里稍微看一下，注册了几个比较重要的BeanPostProcessor类
-			//AutowiredAnnotationBeanPostProcessor,ConfigurationClassPostProcessor,CommonAnnotationBeanPostProcessor
-			Set<BeanDefinitionHolder> processorDefinitions =
-					AnnotationConfigUtils.registerAnnotationConfigProcessors(readerContext.getRegistry(), source);
+			// 这里稍微看一下，注册了几个比较重要的BeanPostProcessor类
+			// AutowiredAnnotationBeanPostProcessor,ConfigurationClassPostProcessor,CommonAnnotationBeanPostProcessor
+			Set<BeanDefinitionHolder> processorDefinitions = AnnotationConfigUtils.registerAnnotationConfigProcessors(readerContext.getRegistry(), source);
 			for (BeanDefinitionHolder processorDefinition : processorDefinitions) {
 				compositeDef.addNestedComponent(new BeanComponentDefinition(processorDefinition));
 			}
@@ -196,14 +188,11 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			String mode = element.getAttribute(SCOPED_PROXY_ATTRIBUTE);
 			if ("targetClass".equals(mode)) {
 				scanner.setScopedProxyMode(ScopedProxyMode.TARGET_CLASS);
-			}
-			else if ("interfaces".equals(mode)) {
+			} else if ("interfaces".equals(mode)) {
 				scanner.setScopedProxyMode(ScopedProxyMode.INTERFACES);
-			}
-			else if ("no".equals(mode)) {
+			} else if ("no".equals(mode)) {
 				scanner.setScopedProxyMode(ScopedProxyMode.NO);
-			}
-			else {
+			} else {
 				throw new IllegalArgumentException("scoped-proxy only supports 'no', 'interfaces' and 'targetClass'");
 			}
 		}
@@ -221,17 +210,14 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 					if (INCLUDE_FILTER_ELEMENT.equals(localName)) {
 						TypeFilter typeFilter = createTypeFilter((Element) node, classLoader, parserContext);
 						scanner.addIncludeFilter(typeFilter);
-					}
-					else if (EXCLUDE_FILTER_ELEMENT.equals(localName)) {
+					} else if (EXCLUDE_FILTER_ELEMENT.equals(localName)) {
 						TypeFilter typeFilter = createTypeFilter((Element) node, classLoader, parserContext);
 						scanner.addExcludeFilter(typeFilter);
 					}
-				}
-				catch (ClassNotFoundException ex) {
+				} catch (ClassNotFoundException ex) {
 					parserContext.getReaderContext().warning(
 							"Ignoring non-present type filter class: " + ex, parserContext.extractSource(element));
-				}
-				catch (Exception ex) {
+				} catch (Exception ex) {
 					parserContext.getReaderContext().error(
 							ex.getMessage(), parserContext.extractSource(element), ex.getCause());
 				}
@@ -241,32 +227,27 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 
 	@SuppressWarnings("unchecked")
 	protected TypeFilter createTypeFilter(Element element, @Nullable ClassLoader classLoader,
-			ParserContext parserContext) throws ClassNotFoundException {
+										  ParserContext parserContext) throws ClassNotFoundException {
 
 		String filterType = element.getAttribute(FILTER_TYPE_ATTRIBUTE);
 		String expression = element.getAttribute(FILTER_EXPRESSION_ATTRIBUTE);
 		expression = parserContext.getReaderContext().getEnvironment().resolvePlaceholders(expression);
 		if ("annotation".equals(filterType)) {
 			return new AnnotationTypeFilter((Class<Annotation>) ClassUtils.forName(expression, classLoader));
-		}
-		else if ("assignable".equals(filterType)) {
+		} else if ("assignable".equals(filterType)) {
 			return new AssignableTypeFilter(ClassUtils.forName(expression, classLoader));
-		}
-		else if ("aspectj".equals(filterType)) {
+		} else if ("aspectj".equals(filterType)) {
 			return new AspectJTypeFilter(expression, classLoader);
-		}
-		else if ("regex".equals(filterType)) {
+		} else if ("regex".equals(filterType)) {
 			return new RegexPatternTypeFilter(Pattern.compile(expression));
-		}
-		else if ("custom".equals(filterType)) {
+		} else if ("custom".equals(filterType)) {
 			Class<?> filterClass = ClassUtils.forName(expression, classLoader);
 			if (!TypeFilter.class.isAssignableFrom(filterClass)) {
 				throw new IllegalArgumentException(
 						"Class is not assignable to [" + TypeFilter.class.getName() + "]: " + expression);
 			}
 			return (TypeFilter) BeanUtils.instantiateClass(filterClass);
-		}
-		else {
+		} else {
 			throw new IllegalArgumentException("Unsupported filter type: " + filterType);
 		}
 	}
@@ -278,12 +259,10 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		Object result;
 		try {
 			result = ReflectionUtils.accessibleConstructor(ClassUtils.forName(className, classLoader)).newInstance();
-		}
-		catch (ClassNotFoundException ex) {
+		} catch (ClassNotFoundException ex) {
 			throw new IllegalArgumentException("Class [" + className + "] for strategy [" +
 					strategyType.getName() + "] not found", ex);
-		}
-		catch (Throwable ex) {
+		} catch (Throwable ex) {
 			throw new IllegalArgumentException("Unable to instantiate class [" + className + "] for strategy [" +
 					strategyType.getName() + "]: a zero-argument constructor is required", ex);
 		}

@@ -16,16 +16,15 @@
 
 package org.springframework.beans.factory.xml;
 
-import org.w3c.dom.Attr;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.config.RuntimeBeanReference;
 import org.springframework.core.Conventions;
 import org.springframework.lang.Nullable;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 
 /**
  * Simple {@code NamespaceHandler} implementation that maps custom attributes
@@ -37,7 +36,7 @@ import org.springframework.lang.Nullable;
  *
  * <pre class="code">
  * &lt;bean id=&quot;rob&quot; class=&quot;..TestBean&quot; p:name=&quot;Rob Harrop&quot; p:spouse-ref=&quot;sally&quot;/&gt;</pre>
- *
+ * <p>
  * Here the '{@code p:name}' corresponds directly to the '{@code name}'
  * property on class '{@code TestBean}'. The '{@code p:spouse-ref}'
  * attributes corresponds to the '{@code spouse}' property and, rather
@@ -79,8 +78,7 @@ public class SimplePropertyNamespaceHandler implements NamespaceHandler {
 			if (propertyName.endsWith(REF_SUFFIX)) {
 				propertyName = propertyName.substring(0, propertyName.length() - REF_SUFFIX.length());
 				pvs.add(Conventions.attributeNameToPropertyName(propertyName), new RuntimeBeanReference(propertyValue));
-			}
-			else {
+			} else {
 				pvs.add(Conventions.attributeNameToPropertyName(propertyName), propertyValue);
 			}
 		}

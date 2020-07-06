@@ -16,6 +16,17 @@
 
 package org.springframework.aop.aspectj.annotation;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.reflect.AjType;
+import org.aspectj.lang.reflect.AjTypeSystem;
+import org.aspectj.lang.reflect.PerClauseKind;
+import org.springframework.aop.framework.AopConfigException;
+import org.springframework.core.ParameterNameDiscoverer;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.lang.Nullable;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -24,24 +35,6 @@ import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.aspectj.lang.annotation.After;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.AfterThrowing;
-import org.aspectj.lang.annotation.Around;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
-import org.aspectj.lang.reflect.AjType;
-import org.aspectj.lang.reflect.AjTypeSystem;
-import org.aspectj.lang.reflect.PerClauseKind;
-
-import org.springframework.aop.framework.AopConfigException;
-import org.springframework.core.ParameterNameDiscoverer;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.lang.Nullable;
 
 /**
  * Abstract base class for factories that can create Spring AOP Advisors
@@ -59,11 +52,13 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 	private static final String AJC_MAGIC = "ajc$";
 
-	private static final Class<?>[] ASPECTJ_ANNOTATION_CLASSES = new Class<?>[] {
+	private static final Class<?>[] ASPECTJ_ANNOTATION_CLASSES = new Class<?>[]{
 			Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class};
 
 
-	/** Logger available to subclasses. */
+	/**
+	 * Logger available to subclasses.
+	 */
 	protected final Log logger = LogFactory.getLog(getClass());
 
 	protected final ParameterNameDiscoverer parameterNameDiscoverer = new AspectJAnnotationParameterNameDiscoverer();
@@ -131,8 +126,8 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	@Nullable
 	protected static AspectJAnnotation<?> findAspectJAnnotationOnMethod(Method method) {
 		for (Class<?> clazz : ASPECTJ_ANNOTATION_CLASSES) {
-			//找到Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
-			//注解的方法，并且把注解里面的信息封装成AspectJAnnotation对象
+			// 找到Pointcut.class, Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
+			// 注解的方法，并且把注解里面的信息封装成AspectJAnnotation对象
 			AspectJAnnotation<?> foundAnnotation = findAnnotation(method, (Class<Annotation>) clazz);
 			if (foundAnnotation != null) {
 				return foundAnnotation;
@@ -143,13 +138,12 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 	@Nullable
 	private static <A extends Annotation> AspectJAnnotation<A> findAnnotation(Method method, Class<A> toLookFor) {
-		//找的规则就是找注解的父注解，递归的方式去找，直到找到目标注解为止
+		// 找的规则就是找注解的父注解，递归的方式去找，直到找到目标注解为止
 		A result = AnnotationUtils.findAnnotation(method, toLookFor);
 		if (result != null) {
-			//把注解里面的信息解析出来，然后包装成AspectJAnnotation对象
+			// 把注解里面的信息解析出来，然后包装成AspectJAnnotation对象
 			return new AspectJAnnotation<>(result);
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
@@ -157,6 +151,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 
 	/**
 	 * Enum for AspectJ annotation types.
+	 *
 	 * @see AspectJAnnotation#getAnnotationType()
 	 */
 	protected enum AspectJAnnotationType {
@@ -168,11 +163,12 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 	/**
 	 * Class modelling an AspectJ annotation, exposing its type enumeration and
 	 * pointcut String.
+	 *
 	 * @param <A> the annotation type
 	 */
 	protected static class AspectJAnnotation<A extends Annotation> {
 
-		private static final String[] EXPRESSION_ATTRIBUTES = new String[] {"pointcut", "value"};
+		private static final String[] EXPRESSION_ATTRIBUTES = new String[]{"pointcut", "value"};
 
 		private static Map<Class<?>, AspectJAnnotationType> annotationTypeMap = new HashMap<>(8);
 
@@ -197,14 +193,13 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 			this.annotation = annotation;
 			this.annotationType = determineAnnotationType(annotation);
 			try {
-				//解析注解上面的表达式，如@Around("pc1()")
-				//@AfterReturning(pointcut = "execution(public * com.xiangxue.jack.service.*.*(..))")
+				// 解析注解上面的表达式，如@Around("pc1()")
+				// @AfterReturning(pointcut = "execution(public * com.xiangxue.jack.service.*.*(..))")
 				this.pointcutExpression = resolveExpression(annotation);
-				//获取注解上的参数
+				// 获取注解上的参数
 				Object argNames = AnnotationUtils.getValue(annotation, "argNames");
 				this.argumentNames = (argNames instanceof String ? (String) argNames : "");
-			}
-			catch (Exception ex) {
+			} catch (Exception ex) {
 				throw new IllegalArgumentException(annotation + " is not a valid AspectJ annotation", ex);
 			}
 		}
@@ -276,8 +271,7 @@ public abstract class AbstractAspectJAdvisorFactory implements AspectJAdvisorFac
 					names[i] = nameTokens.nextToken();
 				}
 				return names;
-			}
-			else {
+			} else {
 				return null;
 			}
 		}

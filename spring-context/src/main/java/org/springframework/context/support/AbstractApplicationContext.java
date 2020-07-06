@@ -550,11 +550,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// Prepare this context for refreshing.
 			prepareRefresh();
 
-			/**
+			/*
 			 重要程度：5
-
-			 TODO ee
-			 1、创建BeanFactory对象
+			 * 1、创建BeanFactory对象
 			 * 2、xml解析
 			 * 	传统标签解析：bean、import等
 			 * 	自定义标签解析 如：<context:component-scan base-package="com.xiangxue.jack"/>
@@ -690,7 +688,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
-		//核心方法，必须读，重要程度：5
+		// 核心方法，必须读，重要程度：5
 		refreshBeanFactory();
 		return getBeanFactory();
 	}

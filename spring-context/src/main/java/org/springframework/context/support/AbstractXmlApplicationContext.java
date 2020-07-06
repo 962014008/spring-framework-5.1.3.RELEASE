@@ -80,7 +80,7 @@ public abstract class AbstractXmlApplicationContext extends org.springframework.
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) throws BeansException, IOException {
 		// Create a new XmlBeanDefinitionReader for the given BeanFactory.
-		// 第一个委托模式，把xml的读取工作委托给XmlBeanDefinitionReader(beanFactory)实例去完成
+		// 委托模式，xml的读取工作由applicationContext委托给xmlBeanDefinitionReader去完成
 		XmlBeanDefinitionReader beanDefinitionReader = new XmlBeanDefinitionReader(beanFactory);
 
 		// Configure the bean definition reader with this context's
@@ -129,9 +129,10 @@ public abstract class AbstractXmlApplicationContext extends org.springframework.
 		if (configResources != null) {
 			reader.loadBeanDefinitions(configResources);
 		}
-		//获取需要加载的xml配置文件
+		// 获取需要加载的xml配置文件
 		String[] configLocations = getConfigLocations();
 		if (configLocations != null) {
+			// 主要看这个方法
 			reader.loadBeanDefinitions(configLocations);
 		}
 	}

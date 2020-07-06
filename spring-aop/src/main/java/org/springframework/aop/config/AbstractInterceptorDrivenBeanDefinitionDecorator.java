@@ -16,23 +16,18 @@
 
 package org.springframework.aop.config;
 
-import java.util.List;
-
-import org.w3c.dom.Node;
-
 import org.springframework.aop.framework.ProxyFactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
-import org.springframework.beans.factory.support.AbstractBeanDefinition;
-import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
-import org.springframework.beans.factory.support.BeanDefinitionRegistry;
-import org.springframework.beans.factory.support.ManagedList;
-import org.springframework.beans.factory.support.RootBeanDefinition;
+import org.springframework.beans.factory.support.*;
 import org.springframework.beans.factory.xml.BeanDefinitionDecorator;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
+import org.w3c.dom.Node;
+
+import java.util.List;
 
 /**
  * Base implementation for
@@ -54,8 +49,8 @@ import org.springframework.util.StringUtils;
  *
  * @author Rob Harrop
  * @author Juergen Hoeller
- * @since 2.0
  * @see org.aopalliance.intercept.MethodInterceptor
+ * @since 2.0
  */
 public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implements BeanDefinitionDecorator {
 
@@ -73,8 +68,7 @@ public abstract class AbstractInterceptorDrivenBeanDefinitionDecorator implement
 
 		// generate name and register the interceptor
 		String interceptorName = existingBeanName + '.' + getInterceptorNameSuffix(interceptorDefinition);
-		BeanDefinitionReaderUtils.registerBeanDefinition(
-				new BeanDefinitionHolder(interceptorDefinition, interceptorName), registry);
+		BeanDefinitionReaderUtils.registerBeanDefinition(new BeanDefinitionHolder(interceptorDefinition, interceptorName), registry);
 
 		BeanDefinitionHolder result = definitionHolder;
 

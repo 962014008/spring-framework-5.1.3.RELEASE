@@ -1287,15 +1287,19 @@ public class BeanDefinitionParserDelegate {
 
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+        // 获取自定义标签的命名空间，如http://www.springframework.org/schema/context
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
+        // 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
+        // 根据命令空间获取到命名空间的处理类，spring.handler文件就是namespaceUri和类的完整限定名的映射
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+        // 执行自定义标签的解析工作
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 
@@ -1303,13 +1307,10 @@ public class BeanDefinitionParserDelegate {
 		return decorateBeanDefinitionIfRequired(ele, definitionHolder, null);
 	}
 
-	public BeanDefinitionHolder decorateBeanDefinitionIfRequired(
-			Element ele, BeanDefinitionHolder definitionHolder, @Nullable BeanDefinition containingBd) {
-
+    public BeanDefinitionHolder decorateBeanDefinitionIfRequired(Element ele, BeanDefinitionHolder definitionHolder, @Nullable BeanDefinition containingBd) {
 		BeanDefinitionHolder finalDefinition = definitionHolder;
 
-		//根据bean标签属性装饰BeanDefinitionHolder，比如<bean class="xx" p:username="jack"/>
-		//
+        // 根据bean标签属性装饰BeanDefinitionHolder，比如<bean class="xx" p:username="lzt"/>
 		// Decorate based on custom attributes first.
 		NamedNodeMap attributes = ele.getAttributes();
 		for (int i = 0; i < attributes.getLength(); i++) {
@@ -1317,7 +1318,7 @@ public class BeanDefinitionParserDelegate {
 			finalDefinition = decorateIfRequired(node, finalDefinition, containingBd);
 		}
 
-		//根据bean标签子元素装饰BeanDefinitionHolder
+        // 根据bean标签子元素装饰BeanDefinitionHolder
 		// Decorate based on custom nested elements.
 		NodeList children = ele.getChildNodes();
 		for (int i = 0; i < children.getLength(); i++) {
@@ -1330,15 +1331,16 @@ public class BeanDefinitionParserDelegate {
 	}
 
 	public BeanDefinitionHolder decorateIfRequired(Node node, BeanDefinitionHolder originalDef, @Nullable BeanDefinition containingBd) {
-		//根据node获取到node的命名空间，形如：http://www.springframework.org/schema/p  p:username="Jack"
+        // 根据node获取到node的命名空间，形如：http://www.springframework.org/schema/p  p:username="lzt"
 		String namespaceUri = getNamespaceURI(node);
 		if (namespaceUri != null && !isDefaultNamespace(namespaceUri)) {
-			//这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
+            // 这里有SPI服务发现的思想，根据配置文件获取namespaceUri对应的处理类
+            // 根据命令空间获取到命名空间的处理类，spring.handler文件就是namespaceUri和类的完整限定名的映射
 			NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 			if (handler != null) {
 
 				//调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象
-				//org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler
+                // org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler
 				BeanDefinitionHolder decorated =
 						handler.decorate(node, originalDef, new ParserContext(this.readerContext, this, containingBd));
 				if (decorated != null) {
