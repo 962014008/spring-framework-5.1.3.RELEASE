@@ -198,7 +198,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
 			processAliasRegistration(ele);
 		}
-		//bean标签，重要程度  5，必须看
+		// bean标签，重要程度  5，必须看
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
 			processBeanDefinition(ele, delegate);
         } else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
@@ -299,6 +299,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	/**
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
+	 * 默认标签的bean标签解析和beanDefinition注册
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
 		//重点看这个方法，重要程度 5 ，解析document，封装成BeanDefinition
@@ -309,7 +310,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 
-				//完成document到BeanDefinition对象转换后，对BeanDefinition对象进行缓存注册
+				// 完成document到BeanDefinition对象转换后，对BeanDefinition对象进行缓存注册
 				// Register the final decorated instance.
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
             } catch (BeanDefinitionStoreException ex) {

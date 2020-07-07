@@ -133,11 +133,8 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 * @see #setResourceLoader
 	 * @since 3.1
 	 */
-	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry, boolean useDefaultFilters,
-										  Environment environment) {
-
-		this(registry, useDefaultFilters, environment,
-				(registry instanceof ResourceLoader ? (ResourceLoader) registry : null));
+	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry, boolean useDefaultFilters, Environment environment) {
+		this(registry, useDefaultFilters, environment, (registry instanceof ResourceLoader ? (ResourceLoader) registry : null));
 	}
 
 	/**
@@ -158,13 +155,12 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 */
 	public ClassPathBeanDefinitionScanner(BeanDefinitionRegistry registry, boolean useDefaultFilters,
 										  Environment environment, @Nullable ResourceLoader resourceLoader) {
-
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		this.registry = registry;
 
-		//使用默认的过滤器
+		// 使用默认过滤器，在过滤器中添加注解类Component.class，实现对@Service、@Component等注解的支持
 		if (useDefaultFilters) {
-			//@Service @Component
+			// @Service @Component
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -254,12 +250,17 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	 *
 	 * @param basePackages the packages to check for annotated classes
 	 * @return number of beans registered
+	 * 扫描basePackages
 	 */
 	public int scan(String... basePackages) {
 		int beanCountAtScanStart = this.registry.getBeanDefinitionCount();
 
+		// 扫描basePackages
 		doScan(basePackages);
 
+		// 注册基础架构角色BeanPostProcessor的beanDefinition（下面有些可能在前面ComponentScanBeanDefinitionParser.parse方法中已经注册了）
+		// 包括internalConfigurationAnnotationProcessor、internalAutowiredAnnotationProcessor、
+		// internalCommonAnnotationProcessor、internalEventListenerProcessor、internalEventListenerFactory等
 		// Register annotation config processors, if necessary.
 		if (this.includeAnnotationConfig) {
 			AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);

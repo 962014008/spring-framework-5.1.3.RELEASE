@@ -74,9 +74,8 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 	/*
 	 * 1、扫描路径中.class后缀的文件
 	 * 2、要判断类上是否有注解
-	 * 3、GenericBeanDefinition genericBeanDefinition = new GenericBeanDefinition();
-	 *    genericBeanDefinition.setBeanClass(BeanClass.class);
-	 * 4、完成beanDefinition注册
+	 * 3、将扫描到的类封装成beanDefinition对象，并完成注册
+	 * 4、注册基础架构角色BeanPostProcessor的beanDefinition
 	 */
 	@Override
 	@Nullable
@@ -90,43 +89,53 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		// 创建注解扫描器
 		// Actually scan for bean definitions and register them.
 		ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
-		// 核心方法，扫描并把扫描的类封装成beanDefinition对象，重要程度：5
+		// 核心方法，将扫描到的类封装成beanDefinition对象，并完成注册，重要程度：5
 		Set<BeanDefinitionHolder> beanDefinitions = scanner.doScan(basePackages);
+		// 注册基础架构角色BeanPostProcessor的beanDefinition
+		// 包括internalConfigurationAnnotationProcessor、internalAutowiredAnnotationProcessor、
+		// internalCommonAnnotationProcessor、internalEventListenerProcessor、internalEventListenerFactory等
 		registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
 
 		return null;
 	}
 
 	protected ClassPathBeanDefinitionScanner configureScanner(ParserContext parserContext, Element element) {
-		// 使用默认的过滤器
+		// 使用默认过滤器
 		boolean useDefaultFilters = true;
-		// @Service @Component  默认filter
+		// 解析use-default-filters，默认过滤器即@Service、@Component
 		if (element.hasAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE)) {
 			useDefaultFilters = Boolean.valueOf(element.getAttribute(USE_DEFAULT_FILTERS_ATTRIBUTE));
 		}
 
 		// 创建注解扫描器
+		// 如果use-default-filters=true，则添加@Component、@Service、@Controller、@Repository、@ManagedBean、@Named到includeFilters容器
 		// Delegate bean definition registration to scanner class.
 		ClassPathBeanDefinitionScanner scanner = createScanner(parserContext.getReaderContext(), useDefaultFilters);
 		scanner.setBeanDefinitionDefaults(parserContext.getDelegate().getBeanDefinitionDefaults());
 		scanner.setAutowireCandidatePatterns(parserContext.getDelegate().getAutowireCandidatePatterns());
 
+		// 设置扫描资源的模式匹配resource-pattern，支持正则表达式
 		if (element.hasAttribute(RESOURCE_PATTERN_ATTRIBUTE)) {
 			scanner.setResourcePattern(element.getAttribute(RESOURCE_PATTERN_ATTRIBUTE));
 		}
 
 		try {
+			// 解析beanName生成器name-generator
 			parseBeanNameGenerator(element, scanner);
 		} catch (Exception ex) {
 			parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());
 		}
 
 		try {
+			// 解析scope-resolver和scoped-proxy属性，两者只能二选一
+			// 后者值为targetClass可选：1.cglib代理 2.interfaces即JDK代理 3.no即不使用代理
 			parseScope(element, scanner);
 		} catch (Exception ex) {
 			parserContext.getReaderContext().error(ex.getMessage(), parserContext.extractSource(element), ex.getCause());
 		}
 
+		// 解析自定义的context:include-filter、context:exclude-filter，用于对扫描class类的过滤
+		// 例如<context:include-filter type="annotation" expression="org.springframework.stereotype.Controller.RestController"/>
 		parseTypeFilters(element, scanner, parserContext);
 
 		return scanner;
