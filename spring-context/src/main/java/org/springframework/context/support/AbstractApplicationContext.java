@@ -95,8 +95,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @see org.springframework.context.MessageSource
  * @since January 21, 2001
  */
-public abstract class AbstractApplicationContext extends DefaultResourceLoader
-		implements ConfigurableApplicationContext {
+public abstract class AbstractApplicationContext extends DefaultResourceLoader implements ConfigurableApplicationContext {
 
 	/**
 	 * Name of the MessageSource bean in the factory.
@@ -539,19 +538,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 *  0：不重要，可以不看
 	 *  1：一般重要，可看可不看
 	 *  5：非常重要，一定要看
-	 *
-	 *
-	 *  必须读的 ：重要程度 5
 	 * */
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
-			//为容器初始化做准备，重要程度：0
+			// 为容器初始化做准备，重要程度：0
 			// Prepare this context for refreshing.
 			prepareRefresh();
 
 			/*
-			 重要程度：5
+			 * 重要程度：5
 			 * 1、创建BeanFactory对象
 			 * 2、xml解析
 			 * 	传统标签解析：bean、import等
@@ -562,15 +558,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			 * 		c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
 			 * 		d、调用类的init方法，init方法是注册了各种自定义标签的解析类
 			 * 		e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
-			 *
 			 * 3、把解析出来的xml标签封装成BeanDefinition对象
-			 * */
+			 */
+			// 1.创建BeanFactory对象 2.xml解析 3.把解析出来的xml标签封装成BeanDefinition对象
 			// Tell the subclass to refresh the internal bean factory.
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
-			/*
-			 * 给beanFactory设置一些属性值，可以不看
-			 * */
+			// 给beanFactory设置一些属性值，可以不看
 			// Prepare the bean factory for use in this context.
 			prepareBeanFactory(beanFactory);
 
@@ -579,13 +573,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
-
-				// 实例化实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类，并加入到BeanFactory中
+				// 实例化实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类，并注册到BeanFactory
 				// 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（钩子方法1和钩子方法2）
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// 实例化实现了BeanPostProcessor接口的类，并加入到BeanFactory中
+				// 实例化实现了BeanPostProcessor接口的类，并注册到BeanFactory中
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 
@@ -605,15 +598,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// Check for listener beans and register them.
 				registerListeners();
 
-				/*
-				 * 这个方法是spring中最重要的方法，没有之一
-				 * 所以这个方法一定要理解要具体看
-				 * 1、bean实例化过程（除了上面已经实例化了的所有其他bean）
-				 * 2、ioc
-				 * 3、注解支持
-				 * 4、BeanPostProcessor的执行
-				 * 5、Aop的入口
-				 * */
+				// spring中最重要的方法，涉及到：
+				// 1.bean实例化过程（除了上面流程已经实例化的） 2.IOC 3.注解支持 4.BeanPostProcessor的执行 5.AOP入口
 				// Instantiate all remaining (non-lazy-init) singletons.
 				finishBeanFactoryInitialization(beanFactory);
 

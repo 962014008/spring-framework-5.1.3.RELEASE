@@ -720,7 +720,7 @@ public class BeanDefinitionParserDelegate {
 				String name = replacedMethodEle.getAttribute(NAME_ATTRIBUTE);
 				String callback = replacedMethodEle.getAttribute(REPLACER_ATTRIBUTE);
 
-				//一个replaced-method标签封装成一个ReplaceOverride对象，最后加入到BeanDefinition对象中
+				//一个replaced-method标签封装成一个ReplaceOverride对象，最后填充到BeanDefinition对象中
 				ReplaceOverride replaceOverride = new ReplaceOverride(name, callback);
 				// Look for arg-type match elements.
 				List<Element> argTypeEles = DomUtils.getChildElementsByTagName(replacedMethodEle, ARG_TYPE_ELEMENT);

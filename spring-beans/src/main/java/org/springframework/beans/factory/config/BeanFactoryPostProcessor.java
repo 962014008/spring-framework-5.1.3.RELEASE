@@ -38,9 +38,9 @@ import org.springframework.beans.BeansException;
  * {@link BeanPostProcessor} instead.
  *
  * @author Juergen Hoeller
- * @since 06.07.2003
  * @see BeanPostProcessor
  * @see PropertyResourceConfigurer
+ * @since 06.07.2003
  */
 @FunctionalInterface
 public interface BeanFactoryPostProcessor {
@@ -50,9 +50,10 @@ public interface BeanFactoryPostProcessor {
 	 * initialization. All bean definitions will have been loaded, but no beans
 	 * will have been instantiated yet. This allows for overriding or adding
 	 * properties even to eager-initializing beans.
+	 *
 	 * @param beanFactory the bean factory used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 * 扩展点-修改已存在beanDefinition（绝对不允许bean实例化）-钩子方法1
 	 */
 	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
-
 }

@@ -482,7 +482,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
         if (resolvedBeanNames != null) {
             return resolvedBeanNames;
         }
-        // 这一步就是真正的获取数据，遍历beanDefinitionNames的每一个数据，符合要求的就会加入到返回的列表中
+        // 这一步就是真正的获取数据，遍历beanDefinitionNames的每一个数据，符合要求的就会添加到返回的列表中
         resolvedBeanNames = doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, true);
         if (ClassUtils.isCacheSafe(type, getBeanClassLoader())) {
             // 加入缓存中，便于下一次获取
