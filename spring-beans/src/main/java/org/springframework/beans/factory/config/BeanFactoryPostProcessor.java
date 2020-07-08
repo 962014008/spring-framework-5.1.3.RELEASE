@@ -53,7 +53,7 @@ public interface BeanFactoryPostProcessor {
 	 *
 	 * @param beanFactory the bean factory used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
-	 * 扩展点-修改已存在beanDefinition（绝对不允许bean实例化）-钩子方法1
+     * 扩展点-修改已存在beanDefinition（不允许bean实例化，BeanPostProcessor则可以）-钩子方法2
 	 */
 	void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException;
 }

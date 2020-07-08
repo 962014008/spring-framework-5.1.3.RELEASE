@@ -63,14 +63,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * for annotation-driven injection of named beans.
  *
  * @author Juergen Hoeller
- * @since 2.5
  * @see #setInitAnnotationType
  * @see #setDestroyAnnotationType
+ * @since 2.5
  */
 @SuppressWarnings("serial")
-public class InitDestroyAnnotationBeanPostProcessor
-		implements DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, PriorityOrdered, Serializable {
-
+public class InitDestroyAnnotationBeanPostProcessor implements
+		DestructionAwareBeanPostProcessor, MergedBeanDefinitionPostProcessor, PriorityOrdered, Serializable {
 	protected transient Log logger = LogFactory.getLog(getClass());
 
 	@Nullable
@@ -83,7 +82,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 
 	@Nullable
 	private final transient Map<Class<?>, LifecycleMetadata> lifecycleMetadataCache = new ConcurrentHashMap<>(256);
-
 
 	/**
 	 * Specify the init annotation to check for, indicating initialization
@@ -115,7 +113,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 	public int getOrder() {
 		return this.order;
 	}
-
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
@@ -165,7 +162,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 	public boolean requiresDestruction(Object bean) {
 		return findLifecycleMetadata(bean.getClass()).hasDestroyMethods();
 	}
-
 
 	private LifecycleMetadata findLifecycleMetadata(Class<?> clazz) {
 		if (this.lifecycleMetadataCache == null) {
@@ -233,7 +229,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 		// Initialize transient fields.
 		this.logger = LogFactory.getLog(getClass());
 	}
-
 
 	/**
 	 * Class representing information about annotated init and destroy methods.
@@ -321,7 +316,6 @@ public class InitDestroyAnnotationBeanPostProcessor
 		}
 	}
 
-
 	/**
 	 * Class representing injection information about an annotated method.
 	 */
@@ -370,5 +364,4 @@ public class InitDestroyAnnotationBeanPostProcessor
 			return this.identifier.hashCode();
 		}
 	}
-
 }

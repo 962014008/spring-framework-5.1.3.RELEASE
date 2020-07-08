@@ -54,6 +54,7 @@ public interface BeanPostProcessor {
 	 * if {@code null}, no subsequent BeanPostProcessors will be invoked
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
+	 * 扩展点-在完成实例化、配置、初始化之后实现自己的业务逻辑-钩子方法
 	 */
 	@Nullable
 	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {

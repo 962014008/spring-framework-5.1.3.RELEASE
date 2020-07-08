@@ -84,7 +84,6 @@ class ConstructorResolver {
 	 * @return a BeanWrapper for the new instance
 	 */
 	public BeanWrapper autowireConstructor(String beanName, RootBeanDefinition mbd, @Nullable Constructor<?>[] chosenCtors, @Nullable Object[] explicitArgs) {
-
 		BeanWrapperImpl bw = new BeanWrapperImpl();
 		// 忽略可以不看，设置类型转换器，注册自定义编辑器
 		this.beanFactory.initBeanWrapper(bw);

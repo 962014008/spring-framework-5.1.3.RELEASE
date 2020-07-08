@@ -573,12 +573,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
-				// 实例化实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类，并注册到BeanFactory
+				// 扩展点1.实例化和注册实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类
 				// 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（钩子方法1和钩子方法2）
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// 实例化实现了BeanPostProcessor接口的类，并注册到BeanFactory中
+				// 扩展点2.实例化和注册实现了BeanPostProcessor接口的类
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 
@@ -598,7 +598,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				// Check for listener beans and register them.
 				registerListeners();
 
-				// spring中最重要的方法，涉及到：
+				// spring中最重要的方法，重点理清楚bean实例化和自定义扩展点如何绑定，涉及到：
 				// 1.bean实例化过程（除了上面流程已经实例化的） 2.IOC 3.注解支持 4.BeanPostProcessor的执行 5.AOP入口
 				// Instantiate all remaining (non-lazy-init) singletons.
 				finishBeanFactoryInitialization(beanFactory);
@@ -895,10 +895,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// 设置类型转换器
 		// Initialize conversion service for this context.
-		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
-				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
-			beanFactory.setConversionService(
-					beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
+		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) && beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
+			beanFactory.setConversionService(beanFactory.getBean(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class));
 		}
 
 		// Register a default embedded value resolver if no bean post-processor
