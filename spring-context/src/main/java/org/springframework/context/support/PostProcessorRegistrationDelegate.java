@@ -222,6 +222,7 @@ final class PostProcessorRegistrationDelegate {
 		List<String> orderedPostProcessorNames = new ArrayList<>();
 		List<String> nonOrderedPostProcessorNames = new ArrayList<>();
 
+		// 处理实现了PriorityOrdered的BeanPostProcessors
 		for (String ppName : postProcessorNames) {
 			if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 				// beanPostProcessor的beanFactory.getBean实例化
@@ -239,7 +240,6 @@ final class PostProcessorRegistrationDelegate {
 			}
 		}
 
-		// 处理实现了PriorityOrdered的BeanPostProcessors
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
 		// 排序
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);

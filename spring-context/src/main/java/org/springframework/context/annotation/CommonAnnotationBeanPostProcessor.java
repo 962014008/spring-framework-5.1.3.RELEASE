@@ -121,8 +121,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor
  */
 @SuppressWarnings("serial")
-public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor
-		implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
+public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBeanPostProcessor implements InstantiationAwareBeanPostProcessor, BeanFactoryAware, Serializable {
 
 	@Nullable
 	private static Class<? extends Annotation> webServiceRefClass;
@@ -180,6 +179,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 	 */
 	public CommonAnnotationBeanPostProcessor() {
 		setOrder(Ordered.LOWEST_PRECEDENCE - 3);
+		// @PostConstruct和@PreDestroy注解的支持
 		setInitAnnotationType(PostConstruct.class);
 		setDestroyAnnotationType(PreDestroy.class);
 		ignoreResourceType("javax.xml.ws.WebServiceContext");
@@ -274,15 +274,15 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 
 	/*
-	* 1、扫描类里面的属性或者方法
-	* 2、判断属性或者方法上面是否有@PostConstruct @PreDestroy @Resource注解
-	* 3、如果有注解的属性或者方法，包装成一个类
-	* */
+	 * 类里面属性或者方法的@PostConstruct @PreDestroy @Resource注解的收集
+	 */
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
-		// 扫描@PostConstruct @PreDestroy
+		// 1.扫描@PostConstruct和@PreDestroy注解
 		super.postProcessMergedBeanDefinition(beanDefinition, beanType, beanName);
-		// 扫描@Resource，扫描属性和方法上面是否有@Resource注解，如果有则收集起来封装成对象
+		// 2.扫描和收集属性和方法上面的@Resource注解并封装成injectionMetadata
+		// injectionMetadata将会存入CommonAnnotationBeanPostProcessor的injectionMetadataCache容器
+		// injectedElement的Member属性将会存入RootBeanDefinition的externallyManagedConfigMembers容器
 		InjectionMetadata metadata = findResourceMetadata(beanName, beanType, null);
 		metadata.checkConfigMembers(beanDefinition);
 	}
@@ -304,8 +304,10 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+		// 获取注解元数据
 		InjectionMetadata metadata = findResourceMetadata(beanName, bean.getClass(), pvs);
 		try {
+			// 注入依赖的field或者method元素，CommonAnnotationBeanPostProcessor支持@PostConstruct、@PreDestroy、@Resource注解
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (Throwable ex) {
@@ -364,11 +366,16 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					}
 					currElements.add(new EjbRefElement(field, field, null));
 				}
+				// @Resource注解的支持（field）
+				// 1.属于jdk中javax.annotation的注解
+				// 2.不可以应用于构造函数
+				// 3.默认byName匹配
 				else if (field.isAnnotationPresent(Resource.class)) {
 					if (Modifier.isStatic(field.getModifiers())) {
 						throw new IllegalStateException("@Resource annotation is not supported on static fields");
 					}
 					if (!this.ignoredResourceTypes.contains(field.getType().getName())) {
+						// 收集@Resource注解（field）
 						currElements.add(new ResourceElement(field, field, null));
 					}
 				}
@@ -400,6 +407,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 						currElements.add(new EjbRefElement(method, bridgedMethod, pd));
 					}
+					// @Resource注解的支持（method）
 					else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
 						if (Modifier.isStatic(method.getModifiers())) {
 							throw new IllegalStateException("@Resource annotation is not supported on static methods");
@@ -410,6 +418,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						}
 						if (!this.ignoredResourceTypes.contains(paramTypes[0].getName())) {
 							PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
+							// 收集@Resource注解（method）
 							currElements.add(new ResourceElement(method, bridgedMethod, pd));
 						}
 					}

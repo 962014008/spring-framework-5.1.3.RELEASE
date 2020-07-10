@@ -294,11 +294,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
-						// 递归判断是否存在属性循环依赖
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// 递归判断是否存在属性循环依赖
 						registerDependentBean(dep, beanName);
 						try {
 							// 实例化
@@ -315,7 +315,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
-							// 有一个模板方法的应用，createBean方法在子类AbstractAutowireCapableBeanFactory中实现
+							// 模板方法模式的应用，createBean钩子方法在子类AbstractAutowireCapableBeanFactory中实现
 							return createBean(beanName, mbd, args);
 						} catch (BeansException ex) {
 							// Explicitly remove instance from singleton cache: It might have been put there
@@ -1622,9 +1622,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param mbd          the merged bean definition
 	 * @return the object to expose for the bean
 	 */
-	protected Object getObjectForBeanInstance(
-			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
-
+	protected Object getObjectForBeanInstance(Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
 			if (beanInstance instanceof NullBean) {
@@ -1638,12 +1636,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
-		//如果实例不是FactoryBean类型的，或者name是以&号开头的，则直接返回实例
+		// 如果实例不是FactoryBean类型的，或者name是以&号开头的，则直接返回实例
 		if (!(beanInstance instanceof FactoryBean) || BeanFactoryUtils.isFactoryDereference(name)) {
 			return beanInstance;
 		}
 
-		//如果代码能走下来，则说明 beanName不是以&开头，并且beanInstance是FactoryBean类型的
+		// 如果代码能走下来，则说明beanName不是以&开头，并且beanInstance是FactoryBean类型的
 		Object object = null;
 		if (mbd == null) {
 			//从缓存里面拿FactoryBean类型的实例
@@ -1658,7 +1656,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 			boolean synthetic = (mbd != null && mbd.isSynthetic());
 
-			//重点看
+			// 重点看这个
 			object = getObjectFromFactoryBean(factory, beanName, !synthetic);
 		}
 		return object;

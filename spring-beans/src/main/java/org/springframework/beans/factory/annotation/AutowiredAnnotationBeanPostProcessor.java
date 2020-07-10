@@ -97,8 +97,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see Autowired
  * @see Value
  */
-public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
-		implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
+public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter implements MergedBeanDefinitionPostProcessor, PriorityOrdered, BeanFactoryAware {
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -127,6 +126,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	 */
 	@SuppressWarnings("unchecked")
 	public AutowiredAnnotationBeanPostProcessor() {
+        // @Autowired和@Value注解的支持
+        // 1.依赖于spring上下文注解类
+        // 2.可以应用于构造函数
+        // 3.默认byType匹配
 		this.autowiredAnnotationTypes.add(Autowired.class);
 		this.autowiredAnnotationTypes.add(Value.class);
 		try {
@@ -344,9 +347,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
+        // 获取注解元数据
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
-			// 注入依赖的file或者method元素
+            // 注入依赖的field或者method元素，AutowiredAnnotationBeanPostProcessor支持@Autowired、@Value注解，如果是field最终会调用依赖类的getBean实例化
 			metadata.inject(bean, beanName, pvs);
 		} catch (BeanCreationException ex) {
 			throw ex;
@@ -550,52 +554,55 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			this.required = required;
 		}
 
-		@Override
-		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
-			Field field = (Field) this.member;
-			Object value;
-			// 是否去查找缓存
-			if (this.cached) {
-				value = resolvedCachedArgument(beanName, this.cachedFieldValue);
-			} else {
-				DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
-				desc.setContainingClass(bean.getClass());
-				Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
-				Assert.state(beanFactory != null, "No BeanFactory available");
-				TypeConverter typeConverter = beanFactory.getTypeConverter();
-				try {
-					// 解析依赖对象并返回value对象
-					value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
-				} catch (BeansException ex) {
-					throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
-				}
-				synchronized (this) {
-					if (!this.cached) {
-						if (value != null || this.required) {
-							this.cachedFieldValue = desc;
-							registerDependentBeans(beanName, autowiredBeanNames);
-							if (autowiredBeanNames.size() == 1) {
-								String autowiredBeanName = autowiredBeanNames.iterator().next();
-								if (beanFactory.containsBean(autowiredBeanName) &&
-										beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
-									this.cachedFieldValue = new ShortcutDependencyDescriptor(
-											desc, autowiredBeanName, field.getType());
-								}
-							}
-						} else {
-							this.cachedFieldValue = null;
-						}
-						this.cached = true;
-					}
-				}
-			}
+        /**
+         * 依赖注入field
+         */
+        @Override
+        protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+            Field field = (Field) this.member;
+            Object value;
+            // 是否去查找缓存
+            if (this.cached) {
+                value = resolvedCachedArgument(beanName, this.cachedFieldValue);
+            } else {
+                DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
+                desc.setContainingClass(bean.getClass());
+                Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
+                Assert.state(beanFactory != null, "No BeanFactory available");
+                TypeConverter typeConverter = beanFactory.getTypeConverter();
+                try {
+                    // 解析依赖对象并返回field对象
+                    value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
+                } catch (BeansException ex) {
+                    throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
+                }
+                synchronized (this) {
+                    if (!this.cached) {
+                        if (value != null || this.required) {
+                            this.cachedFieldValue = desc;
+                            registerDependentBeans(beanName, autowiredBeanNames);
+                            if (autowiredBeanNames.size() == 1) {
+                                String autowiredBeanName = autowiredBeanNames.iterator().next();
+                                if (beanFactory.containsBean(autowiredBeanName) &&
+                                        beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
+                                    this.cachedFieldValue = new ShortcutDependencyDescriptor(
+                                            desc, autowiredBeanName, field.getType());
+                                }
+                            }
+                        } else {
+                            this.cachedFieldValue = null;
+                        }
+                        this.cached = true;
+                    }
+                }
+            }
 
-			if (value != null) {
-				// 通过反射，依赖注入
-				ReflectionUtils.makeAccessible(field);
-				field.set(bean, value);
-			}
-		}
+            if (value != null) {
+                // 通过反射，依赖注入
+                ReflectionUtils.makeAccessible(field);
+                field.set(bean, value);
+            }
+        }
 	}
 
 	/**
@@ -610,78 +617,83 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		@Nullable
 		private volatile Object[] cachedMethodArguments;
 
-		public AutowiredMethodElement(Method method, boolean required, @Nullable PropertyDescriptor pd) {
-			super(method, pd);
-			this.required = required;
-		}
+        public AutowiredMethodElement(Method method, boolean required, @Nullable PropertyDescriptor pd) {
+            super(method, pd);
+            this.required = required;
+        }
 
-		@Override
-		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
-			if (checkPropertySkipping(pvs)) {
-				return;
-			}
-			Method method = (Method) this.member;
-			Object[] arguments;
-			if (this.cached) {
-				// Shortcut for avoiding synchronization...
-				arguments = resolveCachedArguments(beanName);
-			} else {
-				Class<?>[] paramTypes = method.getParameterTypes();
-				arguments = new Object[paramTypes.length];
-				DependencyDescriptor[] descriptors = new DependencyDescriptor[paramTypes.length];
-				Set<String> autowiredBeans = new LinkedHashSet<>(paramTypes.length);
-				Assert.state(beanFactory != null, "No BeanFactory available");
-				TypeConverter typeConverter = beanFactory.getTypeConverter();
-				for (int i = 0; i < arguments.length; i++) {
-					MethodParameter methodParam = new MethodParameter(method, i);
-					DependencyDescriptor currDesc = new DependencyDescriptor(methodParam, this.required);
-					currDesc.setContainingClass(bean.getClass());
-					descriptors[i] = currDesc;
-					try {
-						Object arg = beanFactory.resolveDependency(currDesc, beanName, autowiredBeans, typeConverter);
-						if (arg == null && !this.required) {
-							arguments = null;
-							break;
-						}
-						arguments[i] = arg;
-					} catch (BeansException ex) {
-						throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(methodParam), ex);
-					}
-				}
-				synchronized (this) {
-					if (!this.cached) {
-						if (arguments != null) {
-							Object[] cachedMethodArguments = new Object[paramTypes.length];
-							System.arraycopy(descriptors, 0, cachedMethodArguments, 0, arguments.length);
-							registerDependentBeans(beanName, autowiredBeans);
-							if (autowiredBeans.size() == paramTypes.length) {
-								Iterator<String> it = autowiredBeans.iterator();
-								for (int i = 0; i < paramTypes.length; i++) {
-									String autowiredBeanName = it.next();
-									if (beanFactory.containsBean(autowiredBeanName) &&
-											beanFactory.isTypeMatch(autowiredBeanName, paramTypes[i])) {
-										cachedMethodArguments[i] = new ShortcutDependencyDescriptor(
-												descriptors[i], autowiredBeanName, paramTypes[i]);
-									}
-								}
-							}
-							this.cachedMethodArguments = cachedMethodArguments;
-						} else {
-							this.cachedMethodArguments = null;
-						}
-						this.cached = true;
-					}
-				}
-			}
-			if (arguments != null) {
-				try {
-					ReflectionUtils.makeAccessible(method);
-					method.invoke(bean, arguments);
-				} catch (InvocationTargetException ex) {
-					throw ex.getTargetException();
-				}
-			}
-		}
+        /**
+         * 依赖注入method
+         */
+        @Override
+        protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+            if (checkPropertySkipping(pvs)) {
+                return;
+            }
+            Method method = (Method) this.member;
+            Object[] arguments;
+            if (this.cached) {
+                // Shortcut for avoiding synchronization...
+                arguments = resolveCachedArguments(beanName);
+            } else {
+                Class<?>[] paramTypes = method.getParameterTypes();
+                arguments = new Object[paramTypes.length];
+                DependencyDescriptor[] descriptors = new DependencyDescriptor[paramTypes.length];
+                Set<String> autowiredBeans = new LinkedHashSet<>(paramTypes.length);
+                Assert.state(beanFactory != null, "No BeanFactory available");
+                TypeConverter typeConverter = beanFactory.getTypeConverter();
+                for (int i = 0; i < arguments.length; i++) {
+                    MethodParameter methodParam = new MethodParameter(method, i);
+                    DependencyDescriptor currDesc = new DependencyDescriptor(methodParam, this.required);
+                    currDesc.setContainingClass(bean.getClass());
+                    descriptors[i] = currDesc;
+                    try {
+                        // 解析依赖对象并返回method对象
+                        Object arg = beanFactory.resolveDependency(currDesc, beanName, autowiredBeans, typeConverter);
+                        if (arg == null && !this.required) {
+                            arguments = null;
+                            break;
+                        }
+                        arguments[i] = arg;
+                    } catch (BeansException ex) {
+                        throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(methodParam), ex);
+                    }
+                }
+                synchronized (this) {
+                    if (!this.cached) {
+                        if (arguments != null) {
+                            Object[] cachedMethodArguments = new Object[paramTypes.length];
+                            System.arraycopy(descriptors, 0, cachedMethodArguments, 0, arguments.length);
+                            registerDependentBeans(beanName, autowiredBeans);
+                            if (autowiredBeans.size() == paramTypes.length) {
+                                Iterator<String> it = autowiredBeans.iterator();
+                                for (int i = 0; i < paramTypes.length; i++) {
+                                    String autowiredBeanName = it.next();
+                                    if (beanFactory.containsBean(autowiredBeanName) &&
+                                            beanFactory.isTypeMatch(autowiredBeanName, paramTypes[i])) {
+                                        cachedMethodArguments[i] = new ShortcutDependencyDescriptor(
+                                                descriptors[i], autowiredBeanName, paramTypes[i]);
+                                    }
+                                }
+                            }
+                            this.cachedMethodArguments = cachedMethodArguments;
+                        } else {
+                            this.cachedMethodArguments = null;
+                        }
+                        this.cached = true;
+                    }
+                }
+            }
+            if (arguments != null) {
+                try {
+                    // 通过反射，依赖注入
+                    ReflectionUtils.makeAccessible(method);
+                    method.invoke(bean, arguments);
+                } catch (InvocationTargetException ex) {
+                    throw ex.getTargetException();
+                }
+            }
+        }
 
 		@Nullable
 		private Object[] resolveCachedArguments(@Nullable String beanName) {

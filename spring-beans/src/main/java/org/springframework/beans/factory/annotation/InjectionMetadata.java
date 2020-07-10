@@ -82,7 +82,7 @@ public class InjectionMetadata {
 	}
 
 	/**
-	 * 遍历上面的injectedElements集合调用元素的注入方法，调用各自具体实现类的inject方法执行注入操作
+     * 遍历injectedElements集合，调用各自具体实现类的inject方法执行注入操作
 	 */
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 		// 需要执行依赖注入的filed和method元素
@@ -97,7 +97,7 @@ public class InjectionMetadata {
 					Field field = (Field) element.member;
 					System.out.println("==IOC/DI===beanName==" + beanName + "==field[" + field.getName() + "]-> getBean(" + field.getName() + ")");
 				}
-				// 注入到目标bean中
+                // 注入到目标bean中，最终会调用依赖类的getBean实例化
 				element.inject(target, beanName, pvs);
 			}
 		}

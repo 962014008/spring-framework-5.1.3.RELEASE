@@ -1151,7 +1151,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
         } else {
             Object result = getAutowireCandidateResolver().getLazyResolutionProxyIfNecessary(descriptor, requestingBeanName);
             if (result == null) {
-                // doResolveDependency方法是依赖注入bean的主流程，该方法会去创建bean
+                // 看这里，doResolveDependency方法是依赖注入bean的主流程，该方法会去创建bean
                 result = doResolveDependency(descriptor, requestingBeanName, autowiredBeanNames, typeConverter);
             }
             return result;
@@ -1225,8 +1225,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
                 autowiredBeanNames.add(autowiredBeanName);
             }
             if (instanceCandidate instanceof Class) {
-                // 在这里真正拿到了构造函数中依赖的实例
-                // 确定了唯一的autowiredBeanName以后，将会调用getBean方法，递归完成bean实例化的过程
+                // 看这里，真正拿到了构造函数中依赖的实例
+                // 确定了唯一的autowiredBeanName以后，将会调用getBean实例化方法，递归完成bean实例化的过程
                 instanceCandidate = descriptor.resolveCandidate(autowiredBeanName, type, this);
             }
             Object result = instanceCandidate;
