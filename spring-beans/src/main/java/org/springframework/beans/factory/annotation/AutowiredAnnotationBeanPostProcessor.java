@@ -571,7 +571,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
                 Assert.state(beanFactory != null, "No BeanFactory available");
                 TypeConverter typeConverter = beanFactory.getTypeConverter();
                 try {
-                    // 解析依赖对象并返回field对象
+					// 解析依赖对象并返回field对象，最终会调用依赖类的getBean实例化
                     value = beanFactory.resolveDependency(desc, beanName, autowiredBeanNames, typeConverter);
                 } catch (BeansException ex) {
                     throw new UnsatisfiedDependencyException(null, beanName, new InjectionPoint(field), ex);
@@ -648,7 +648,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
                     currDesc.setContainingClass(bean.getClass());
                     descriptors[i] = currDesc;
                     try {
-                        // 解析依赖对象并返回method对象
+						// 解析依赖对象并返回method对象，最终会调用依赖类的getBean实例化
                         Object arg = beanFactory.resolveDependency(currDesc, beanName, autowiredBeans, typeConverter);
                         if (arg == null && !this.required) {
                             arguments = null;

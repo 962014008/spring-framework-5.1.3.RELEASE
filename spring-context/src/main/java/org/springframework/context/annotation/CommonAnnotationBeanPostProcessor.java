@@ -308,6 +308,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 		InjectionMetadata metadata = findResourceMetadata(beanName, bean.getClass(), pvs);
 		try {
 			// 注入依赖的field或者method元素，CommonAnnotationBeanPostProcessor支持@PostConstruct、@PreDestroy、@Resource注解
+			// 如果是field最终会调用依赖类的getBean实例化
 			metadata.inject(bean, beanName, pvs);
 		}
 		catch (Throwable ex) {
@@ -366,7 +367,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 					}
 					currElements.add(new EjbRefElement(field, field, null));
 				}
-				// @Resource注解的支持（field）
+				// @Resource注解的支持
 				// 1.属于jdk中javax.annotation的注解
 				// 2.不可以应用于构造函数
 				// 3.默认byName匹配
@@ -407,7 +408,6 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 						PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 						currElements.add(new EjbRefElement(method, bridgedMethod, pd));
 					}
-					// @Resource注解的支持（method）
 					else if (bridgedMethod.isAnnotationPresent(Resource.class)) {
 						if (Modifier.isStatic(method.getModifiers())) {
 							throw new IllegalStateException("@Resource annotation is not supported on static methods");

@@ -525,39 +525,34 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 	}
 
 	/*
-	 *	该方法是spring容器初始化的核心方法。是spring容器初始化的核心流程，是一个典型的父类模板设计模式的运用
-	 *		根据不同的上下文对象，会掉到不同的上下文对象子类方法中
+	 *	该方法是spring容器初始化的核心方法。是spring容器初始化的核心流程，是一个典型的父类模板设计模式的运用，
+	 *	根据不同的上下文对象，会掉到不同的上下文对象子类方法中
 	 *
 	 *	核心上下文子类有：
 	 *	ClassPathXmlApplicationContext
 	 *	FileSystemXmlApplicationContext
 	 *	AnnotationConfigApplicationContext
 	 *	EmbeddedWebApplicationContext(springboot)
-	 *
-	 * 方法重要程度：
-	 *  0：不重要，可以不看
-	 *  1：一般重要，可看可不看
-	 *  5：非常重要，一定要看
-	 * */
+	 */
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
-			// 为容器初始化做准备，重要程度：0
+			// 为容器初始化做准备，不重要
 			// Prepare this context for refreshing.
 			prepareRefresh();
 
 			/*
-			 * 重要程度：5
+			 * 非常重要
 			 * 1、创建BeanFactory对象
 			 * 2、xml解析
-			 * 	传统标签解析：bean、import等
-			 * 	自定义标签解析 如：<context:component-scan base-package="com.xiangxue.jack"/>
-			 * 	自定义标签解析流程：
-			 * 		a、根据当前解析标签的头信息找到对应的namespaceUri
-			 * 		b、加载spring所以jar中的spring.handlers文件。并建立映射关系
-			 * 		c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
-			 * 		d、调用类的init方法，init方法是注册了各种自定义标签的解析类
-			 * 		e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
+			 *     传统标签解析：bean、import等
+			 *     自定义标签解析 如：<context:component-scan base-package="com.xiangxue.jack"/>
+			 *     自定义标签解析流程：
+			 *        a、根据当前解析标签的头信息找到对应的namespaceUri
+			 *        b、加载spring所以jar中的spring.handlers文件。并建立映射关系
+			 *        c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
+			 *        d、调用类的init方法，init方法是注册了各种自定义标签的解析类
+			 *        e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
 			 * 3、把解析出来的xml标签封装成BeanDefinition对象
 			 */
 			// 1.创建BeanFactory对象 2.xml解析 3.把解析出来的xml标签封装成BeanDefinition对象
@@ -573,12 +568,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
-				// 扩展点1.实例化和注册实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类
-				// 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（钩子方法1和钩子方法2）
+				// 扩展点1（前置处理器），实例化和注册实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类
+				// 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（registry钩子方法和factory钩子方法）
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// 扩展点2.实例化和注册实现了BeanPostProcessor接口的类
+				// 扩展点2（后置处理器），实例化和注册实现了BeanPostProcessor接口的类
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 

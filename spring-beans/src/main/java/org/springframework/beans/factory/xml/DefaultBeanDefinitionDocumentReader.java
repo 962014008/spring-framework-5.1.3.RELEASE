@@ -302,7 +302,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * 默认标签的bean标签解析和beanDefinition注册
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
-		//重点看这个方法，重要程度 5 ，解析document，封装成BeanDefinition
+		// 重点看这个方法，解析document，封装成BeanDefinition
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
 

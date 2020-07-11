@@ -510,7 +510,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-            // 重要程度：5
+			// 非常重要
             // 创建instanceWrapper实例，未完全实例化（只是个光杆司令，堆内存的实例是还没有做依赖注入的，但存在instanceWrapper引用指向了该实例）
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
@@ -524,7 +524,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		synchronized (mbd.postProcessingLock) {
 			if (!mbd.postProcessed) {
 				try {
-					// 重要程度：5
+					// 非常重要
                     // 注解的收集和装配过程
                     // BeanPostProcessor接口的典型运用1，在执行ioc依赖注入之前，收集依赖注入和@PostConstruct等注解的元数据，装配到beanDefinition
 					// CommonAnnotationBeanPostProcessor支持@PostConstruct、@PreDestroy、@Resource注解
@@ -546,7 +546,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (logger.isTraceEnabled()) {
                 logger.trace("Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
 			}
-			// 重要程度：5，这里着重理解，对理解循环依赖帮助非常大，添加三级缓存
+			// 非常重要
+			// 这里着重理解，对理解循环依赖帮助非常大，添加三级缓存
 			// instanceWrapper未完全实例化（只是个光杆司令，堆内存的实例是还没有做依赖注入的，但存在instanceWrapper引用指向了该实例）
 			// 参数2是匿名类工厂方法
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
@@ -555,12 +556,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
-			// 重要程度：5
+			// 非常重要
             // BeanPostProcessor接口的典型运用2，执行ioc依赖注入，包括对象(@Resource和@Autowired)和属性(@Value)
 			// 使用CommonAnnotationBeanPostProcessor和AutowiredAnnotationBeanPostProcessor填充beanInstance
 			populateBean(beanName, mbd, instanceWrapper);
 
-			// 重要程度：5
+			// 非常重要
             // BeanPostProcessor接口的典型运用3，bean实例化+ioc依赖注入以后，执行@PostConstruct等
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		} catch (Throwable ex) {
@@ -1112,7 +1113,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
-        // 1.factoryMethod实例化，如果存在@bean注解的方法，该方法名会被扫描设置到FactoryMethodName属性
+		// 1.factoryMethod实例化，如果存在@bean注解或者factory-method方法，该方法名会被扫描设置到FactoryMethodName属性
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
 		}
@@ -1362,12 +1363,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		PropertyDescriptor[] filteredPds = null;
 
-		// 重点看这个if代码块，重要程度：5
 		if (hasInstAwareBpps) {
 			if (pvs == null) {
 				pvs = mbd.getPropertyValues();
 			}
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
+				// 非常重要
+				// 重点看这个if代码块
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
                     // 模板设计模式的应用，IOC依赖注入过程，@Autowired、@Value、@Resource等注解的支持（基于注解的方式进入此分支），如果是field最终会调用依赖类的getBean实例化
