@@ -550,12 +550,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 			 *     自定义标签解析流程：
 			 *        a、根据当前解析标签的头信息找到对应的namespaceUri
 			 *        b、加载spring所以jar中的spring.handlers文件。并建立映射关系
-			 *        c、根据namespaceUri从映射关系中找到对应的实现了NamespaceHandler接口的类
+			 *        c、根据namespaceUri从映射关系中找到对应的namespaceHandler
 			 *        d、调用类的init方法，init方法是注册了各种自定义标签的解析类
 			 *        e、根据namespaceUri找到对应的解析类，然后调用paser方法完成标签解析
 			 * 3、把解析出来的xml标签封装成BeanDefinition对象
 			 */
-			// 1.创建BeanFactory对象 2.xml解析 3.把解析出来的xml标签封装成BeanDefinition对象
+			// 1.1 创建BeanFactory对象
+			// 1.2 xml解析
+			// 1.3 把解析出来的xml标签封装成BeanDefinition对象
 			// Tell the subclass to refresh the internal bean factory.
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
@@ -568,12 +570,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				// Allows post-processing of the bean factory in context subclasses.
 				postProcessBeanFactory(beanFactory);
 
-				// 扩展点1（前置处理器），实例化和注册实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor接口的类
-				// 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（registry钩子方法和factory钩子方法）
+				// 扩展点1（前置处理器）
+				// 2.1 实例化beanDefinitionRegistryPostProcessor和beanFactoryPostProcessor
+				// 2.2 调用postProcessBeanDefinitionRegistry方法和postProcessBeanFactory方法（registry钩子方法和factory钩子方法）
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				// 扩展点2（后置处理器），实例化和注册实现了BeanPostProcessor接口的类
+				// 扩展点2（后置处理器）
+				// 3.实例化和注册beanPostProcessor
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 
@@ -585,7 +589,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				// Initialize event multicaster for this context.
 				initApplicationEventMulticaster();
 
-				// 这个方法着重理解模板设计模式（钩子方法），因为在springboot中，这个方法是用来做内嵌tomcat启动的
+				// 4.这个方法着重理解模板设计模式（钩子方法），因为在springboot中，这个方法是用来做内嵌tomcat启动的
 				// Initialize other special beans in specific context subclasses.
 				onRefresh();
 
@@ -594,7 +598,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 				registerListeners();
 
 				// spring中最重要的方法，重点理清楚bean实例化和自定义扩展点如何绑定，涉及到：
-				// 1.bean实例化过程（除了上面流程已经实例化的） 2.IOC 3.注解支持 4.BeanPostProcessor的执行 5.AOP入口
+				// 5.1 bean实例化过程（除了上面流程已经实例化的）
+				// 5.2 IOC
+				// 5.3 注解支持
+				// 5.4 BeanPostProcessor的执行
+				// 5.5 AOP入口
 				// Instantiate all remaining (non-lazy-init) singletons.
 				finishBeanFactoryInitialization(beanFactory);
 
@@ -866,7 +874,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader i
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
-		// 获取到实现了ApplicationListener接口的类的名称
+		// 获取到applicationListener的名称
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);

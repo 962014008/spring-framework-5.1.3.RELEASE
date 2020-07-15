@@ -42,7 +42,7 @@ final class PostProcessorRegistrationDelegate {
 	}
 
 	/**
-	 * 实例化实现了BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor（BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor）的类，并注册到BeanFactory
+	 * 实例化BeanDefinitionRegistryPostProcessor和BeanFactoryPostProcessor（BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProcessor），并注册到BeanFactory
 	 */
 	public static void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
@@ -70,7 +70,7 @@ final class PostProcessorRegistrationDelegate {
 			// PriorityOrdered, Ordered, and the rest.
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
-			// 2.1第一次收集实现了BeanDefinitionRegistryPostProcessor接口的类的beanDefinition名称
+			// 2.1第一次收集BeanDefinitionRegistryPostProcessor的beanDefinition名称
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
 			String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 
@@ -90,7 +90,7 @@ final class PostProcessorRegistrationDelegate {
 			invokeBeanDefinitionRegistryPostProcessors(currentRegistryProcessors, registry);
 			currentRegistryProcessors.clear();
 
-			// 3.1第二次收集实现了BeanDefinitionRegistryPostProcessor接口的类的beanDefinition名称
+			// 3.1第二次收集BeanDefinitionRegistryPostProcessor的beanDefinition名称
 			// Next, invoke the BeanDefinitionRegistryPostProcessors that implement Ordered.
 			postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			// 3.2再实例化实现了排序接口Ordered的BeanDefinitionRegistryPostProcessor
@@ -115,7 +115,7 @@ final class PostProcessorRegistrationDelegate {
 			boolean reiterate = true;
 			while (reiterate) {
 				reiterate = false;
-				// 4.1最后连续收集剩下实现了BeanDefinitionRegistryPostProcessor接口的类的beanDefinition名称
+				// 4.1最后连续收集剩下BeanDefinitionRegistryPostProcessor的beanDefinition名称
 				postProcessorNames = beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 				// 4.2最后连续实例化剩下的BeanDefinitionRegistryPostProcessor
 				for (String ppName : postProcessorNames) {
@@ -135,7 +135,7 @@ final class PostProcessorRegistrationDelegate {
 			}
 
 			// 5.第一次调用BeanFactoryPostProcessor.postProcessBeanFactory（factory钩子方法）
-			// 备注：实现了BeanFactoryPostProcessor接口的类的beanDefinition名称已经在上面基本收集完毕（registryProcessors=已实例化的
+			// 备注：BeanFactoryPostProcessor的BeanDefinition名称已经在上面基本收集完毕（registryProcessors=已实例化的
 			// BeanDefinitionRegistryPostProcessor，regularPostProcessors=初始传入的非BeanDefinitionRegistryPostProcessor的
 			// BeanFactoryPostProcessor，还缺postProcessBeanDefinitionRegistry方法创建的非BeanDefinitionRegistryPostProcessor的
 			// BeanFactoryPostProcessor）
@@ -211,7 +211,7 @@ final class PostProcessorRegistrationDelegate {
 	}
 
 	public static void registerBeanPostProcessors(ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
-		// 拿到工程里面实现了BeanPostProcessor接口的类，获取到BeanDefinition的名称
+		// 收集BeanPostProcessor的BeanDefinition名称
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when

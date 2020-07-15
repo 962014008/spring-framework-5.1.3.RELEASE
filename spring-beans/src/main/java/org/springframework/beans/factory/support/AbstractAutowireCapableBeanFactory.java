@@ -525,7 +525,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (!mbd.postProcessed) {
 				try {
 					// 非常重要
-                    // 注解的收集和装配过程
+					// 注解（依赖注入等相关）的收集和装配过程
                     // BeanPostProcessor接口的典型运用1，在执行ioc依赖注入之前，收集依赖注入和@PostConstruct等注解的元数据，装配到beanDefinition
 					// CommonAnnotationBeanPostProcessor支持@PostConstruct、@PreDestroy、@Resource注解
 					// AutowiredAnnotationBeanPostProcessor支持@Autowired、@Value注解
@@ -1025,6 +1025,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
+			// 注解（依赖注入等相关）的收集和装配过程，通过MergedBeanDefinitionPostProcessor合并依赖注入的属性到beanDefinition
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
 				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
 				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
@@ -1324,13 +1325,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// to support styles of field injection.
 		boolean continueWithPropertyPopulation = true;
 
-		// 这里很有意思，写接口可以让所有类都不能依赖注入
+		// 如果重写InstantiationAwarePostProcessor的postProcessAfterInstantiation方法并return false，所有类的IOC依赖注入将会失效
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
 					if (!ibp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
-						// 是否需要DI依赖注入
+						// 是否需要IOC依赖注入
 						continueWithPropertyPopulation = false;
 						break;
 					}
@@ -1379,7 +1380,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 							filteredPds = filterPropertyDescriptorsForDependencyCheck(bw, mbd.allowCaching);
 						}
 
-                        // 老版本用这个完成DI依赖注入过程，@Autowired、@Resource等注解的支持
+						// 老版本用这个完成IOC依赖注入过程，@Autowired、@Resource等注解的支持
 						pvsToUse = ibp.postProcessPropertyValues(pvs, filteredPds, bw.getWrappedInstance(), beanName);
 						if (pvsToUse == null) {
 							return;
@@ -1396,7 +1397,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			checkDependencies(beanName, mbd, filteredPds, pvs);
 		}
 
-        // 标签做依赖注入的代码实现，老版本如<property name="username" value="Lzt"/>，复杂且无用
+		// setter方法的实现，标签做依赖注入的代码实现，如xml方式的标签<property name="username" value="Lzt"/>，复杂且无用
 		if (pvs != null) {
 			applyPropertyValues(beanName, mbd, bw, pvs);
 		}
@@ -1783,6 +1784,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected void invokeInitMethods(String beanName, final Object bean, @Nullable RootBeanDefinition mbd) throws Throwable {
 		boolean isInitializingBean = (bean instanceof InitializingBean);
+		// 调用afterPropertySet(InitializingBean接口) 
 		if (isInitializingBean && (mbd == null || !mbd.isExternallyManagedInitMethod("afterPropertiesSet"))) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Invoking afterPropertiesSet() on bean with name '" + beanName + "'");
@@ -1801,6 +1803,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// 调用initMethod方法
 		if (mbd != null && bean.getClass() != NullBean.class) {
 			String initMethodName = mbd.getInitMethodName();
 			if (StringUtils.hasLength(initMethodName) &&

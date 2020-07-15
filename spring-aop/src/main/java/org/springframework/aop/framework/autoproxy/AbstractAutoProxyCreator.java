@@ -240,9 +240,12 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
+
 		if (!this.earlyProxyReferences.contains(cacheKey)) {
 			this.earlyProxyReferences.add(cacheKey);
 		}
+
+		// aop切面的入口2，存在循环依赖的常规bean实例化通过这个入口，通过earlyProxyReferences容器与入口1互斥
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
 
@@ -302,8 +305,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			// aop切面的入口1，不存在循环依赖的其他常规bean实例化通过这个入口，通过earlyProxyReferences容器与入口2互斥
 			if (!this.earlyProxyReferences.contains(cacheKey)) {
-				// aop切面的入口
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}

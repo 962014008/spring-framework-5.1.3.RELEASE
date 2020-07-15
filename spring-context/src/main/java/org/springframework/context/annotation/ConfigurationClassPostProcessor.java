@@ -117,7 +117,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	};
 
-
+	/*
+	 * @Priority中优先级最高，会最先被实例化和调用钩子方法
+	 */
 	@Override
 	public int getOrder() {
 		return Ordered.LOWEST_PRECEDENCE;  // within PriorityOrdered
@@ -201,8 +203,9 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 	}
 
 
-	/**
+	/*
 	 * Derive further bean definitions from the configuration classes in the registry.
+	 * registry钩子方法
 	 */
 	@Override
 	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
@@ -220,9 +223,10 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		processConfigBeanDefinitions(registry);
 	}
 
-	/**
+	/*
 	 * Prepare the Configuration classes for servicing bean requests at runtime
 	 * by replacing them with CGLIB-enhanced subclasses.
+	 * factory钩子方法
 	 */
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
@@ -296,7 +300,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 
 		// 上面流程完成了各类注解的判断，将包含这些注解的beanDefinition收集到Set<BeanDefinitionHolder> candidates容器中，
 		// 而这些beanDefinition后续的处理，以及beanDefinition里面@ComponentScan、@Import、@ImportResorce注解的路径，
-		// 还依赖于ConfigurationClassParser类（递归流程）
+		// 还依赖于@Configuration 相关的ConfigurationClassParser类（递归流程）
 		// Parse each @Configuration class
 		ConfigurationClassParser parser = new ConfigurationClassParser(this.metadataReaderFactory,
 				this.problemReporter, this.environment, this.resourceLoader, this.componentScanBeanNameGenerator, registry);
@@ -407,9 +411,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 	}
 
-
 	private static class ImportAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter {
-
 		private final BeanFactory beanFactory;
 
 		public ImportAwareBeanPostProcessor(BeanFactory beanFactory) {
@@ -438,5 +440,4 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 			return bean;
 		}
 	}
-
 }

@@ -16,16 +16,16 @@
 
 package org.springframework.beans.factory.config;
 
-import java.io.IOException;
-import java.util.Enumeration;
-import java.util.Properties;
-
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
 import org.springframework.core.io.support.PropertiesLoaderSupport;
 import org.springframework.util.ObjectUtils;
+
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Properties;
 
 /**
  * Allows for configuration of individual bean property values from a property resource,
@@ -54,7 +54,6 @@ public abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport
 
 	private int order = Ordered.LOWEST_PRECEDENCE;  // default: same as non-Ordered
 
-
 	/**
 	 * Set the order value of this object for sorting purposes.
 	 * @see PriorityOrdered
@@ -67,8 +66,7 @@ public abstract class PropertyResourceConfigurer extends PropertiesLoaderSupport
 	public int getOrder() {
 		return this.order;
 	}
-
-
+	
 	/**
 	 * {@linkplain #mergeProperties Merge}, {@linkplain #convertProperties convert} and
 	 * {@linkplain #processProperties process} properties against the given bean factory.
