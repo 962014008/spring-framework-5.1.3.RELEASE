@@ -249,7 +249,7 @@ class ConstructorResolver {
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
 
-		// 有参构造函数的实例化，通过反射实现
+		// 有参构造器的实例化，通过反射实现
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}

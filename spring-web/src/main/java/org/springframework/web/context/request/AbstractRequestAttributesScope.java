@@ -34,15 +34,19 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @author Rob Harrop
  * @since 2.0
+ * session和request级别Scope需要继承的抽象Scope
  */
 public abstract class AbstractRequestAttributesScope implements Scope {
 
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
+		// 从threadLocal或inheritableThreadLocal获取requestAttributes
 		RequestAttributes attributes = RequestContextHolder.currentRequestAttributes();
 		Object scopedObject = attributes.getAttribute(name, getScope());
 		if (scopedObject == null) {
+			// 调用bean实例化方法
 			scopedObject = objectFactory.getObject();
+			// 把bean实例存入httpServletRequest或httpSession
 			attributes.setAttribute(name, scopedObject, getScope());
 			// Retrieve object again, registering it for implicit session attribute updates.
 			// As a bonus, we also allow for potential decoration at the getAttribute level.
@@ -64,8 +68,7 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 		if (scopedObject != null) {
 			attributes.removeAttribute(name, getScope());
 			return scopedObject;
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
@@ -86,6 +89,7 @@ public abstract class AbstractRequestAttributesScope implements Scope {
 
 	/**
 	 * Template method that determines the actual target scope.
+	 *
 	 * @return the target scope, in the form of an appropriate
 	 * {@link RequestAttributes} constant
 	 * @see RequestAttributes#SCOPE_REQUEST

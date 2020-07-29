@@ -91,9 +91,11 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 		ClassPathBeanDefinitionScanner scanner = configureScanner(parserContext, element);
 		// 核心方法，将扫描到的类封装成beanDefinition对象，并完成注册，重要程度：5
 		Set<BeanDefinitionHolder> beanDefinitions = scanner.doScan(basePackages);
-		// 注册基础架构角色BeanPostProcessor的beanDefinition
-		// 包括internalConfigurationAnnotationProcessor、internalAutowiredAnnotationProcessor、
-		// internalCommonAnnotationProcessor、internalEventListenerProcessor、internalEventListenerFactory等
+        // 注册基础架构角色BeanPostProcessor的beanDefinition
+        // internalConfigurationAnnotationProcessor，对应ConfigurationClassPostProcessor，处理@Configuration和@Bean
+        // internalAutowiredAnnotationProcessor，对应AutowiredAnnotationProcessor，处理@Autowired、@Value、@Inject
+        // internalCommonAnnotationProcessor，对应CommonAnnotationBeanPostProcessor，处理@PreDestory、@PostConstruct、@Resource、@EJB、@WebServiceRef
+        // internalEventListenerProcessor和internalEventListenerFactory，对应EventListenerProcessor和EventListenerFactory，处理@EventListener及其工厂
 		registerComponents(parserContext.getReaderContext(), beanDefinitions, element);
 
 		return null;
@@ -160,8 +162,11 @@ public class ComponentScanBeanDefinitionParser implements BeanDefinitionParser {
 			annotationConfig = Boolean.valueOf(element.getAttribute(ANNOTATION_CONFIG_ATTRIBUTE));
 		}
 		if (annotationConfig) {
-			// 这里稍微看一下，注册了几个比较重要的BeanPostProcessor类
-			// AutowiredAnnotationBeanPostProcessor,ConfigurationClassPostProcessor,CommonAnnotationBeanPostProcessor
+            // 注册基础架构角色BeanPostProcessor的beanDefinition
+            // internalConfigurationAnnotationProcessor，对应ConfigurationClassPostProcessor，处理@Configuration、@Component（还包括@ComponentScan、@Import、@ImportResource）、方法上的@Bean注解
+            // internalAutowiredAnnotationProcessor，对应AutowiredAnnotationProcessor，处理@Autowired、@Value、@Inject
+            // internalCommonAnnotationProcessor，对应CommonAnnotationBeanPostProcessor，处理@PreDestory、@PostConstruct、@Resource、@EJB、@WebServiceRef
+            // internalEventListenerProcessor和internalEventListenerFactory，对应EventListenerProcessor和EventListenerFactory，处理@EventListener及其工厂
 			Set<BeanDefinitionHolder> processorDefinitions = AnnotationConfigUtils.registerAnnotationConfigProcessors(readerContext.getRegistry(), source);
 			for (BeanDefinitionHolder processorDefinition : processorDefinitions) {
 				compositeDef.addNestedComponent(new BeanComponentDefinition(processorDefinition));

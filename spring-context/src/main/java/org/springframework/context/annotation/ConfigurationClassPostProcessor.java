@@ -70,374 +70,375 @@ import static org.springframework.context.annotation.AnnotationConfigUtils.CONFI
  * @author Phillip Webb
  * @since 3.0
  */
-public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPostProcessor,
-		PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
+public class ConfigurationClassPostProcessor implements
+        BeanDefinitionRegistryPostProcessor, PriorityOrdered, ResourceLoaderAware, BeanClassLoaderAware, EnvironmentAware {
 
-	private static final String IMPORT_REGISTRY_BEAN_NAME =
-			ConfigurationClassPostProcessor.class.getName() + ".importRegistry";
-
-
-	private final Log logger = LogFactory.getLog(getClass());
-
-	private SourceExtractor sourceExtractor = new PassThroughSourceExtractor();
-
-	private ProblemReporter problemReporter = new FailFastProblemReporter();
-
-	@Nullable
-	private Environment environment;
-
-	private ResourceLoader resourceLoader = new DefaultResourceLoader();
-
-	@Nullable
-	private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
-
-	private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
-
-	private boolean setMetadataReaderFactoryCalled = false;
-
-	private final Set<Integer> registriesPostProcessed = new HashSet<>();
-
-	private final Set<Integer> factoriesPostProcessed = new HashSet<>();
-
-	@Nullable
-	private ConfigurationClassBeanDefinitionReader reader;
-
-	private boolean localBeanNameGeneratorSet = false;
-
-	/* Using short class names as default bean names */
-	private BeanNameGenerator componentScanBeanNameGenerator = new AnnotationBeanNameGenerator();
-
-	/* Using fully qualified class names as default bean names */
-	private BeanNameGenerator importBeanNameGenerator = new AnnotationBeanNameGenerator() {
-		@Override
-		protected String buildDefaultBeanName(BeanDefinition definition) {
-			String beanClassName = definition.getBeanClassName();
-			Assert.state(beanClassName != null, "No bean class name set");
-			return beanClassName;
-		}
-	};
-
-	/*
-	 * @Priority中优先级最高，会最先被实例化和调用钩子方法
-	 */
-	@Override
-	public int getOrder() {
-		return Ordered.LOWEST_PRECEDENCE;  // within PriorityOrdered
-	}
-
-	/**
-	 * Set the {@link SourceExtractor} to use for generated bean definitions
-	 * that correspond to {@link Bean} factory methods.
-	 */
-	public void setSourceExtractor(@Nullable SourceExtractor sourceExtractor) {
-		this.sourceExtractor = (sourceExtractor != null ? sourceExtractor : new PassThroughSourceExtractor());
-	}
-
-	/**
-	 * Set the {@link ProblemReporter} to use.
-	 * <p>Used to register any problems detected with {@link Configuration} or {@link Bean}
-	 * declarations. For instance, an @Bean method marked as {@code final} is illegal
-	 * and would be reported as a problem. Defaults to {@link FailFastProblemReporter}.
-	 */
-	public void setProblemReporter(@Nullable ProblemReporter problemReporter) {
-		this.problemReporter = (problemReporter != null ? problemReporter : new FailFastProblemReporter());
-	}
-
-	/**
-	 * Set the {@link MetadataReaderFactory} to use.
-	 * <p>Default is a {@link CachingMetadataReaderFactory} for the specified
-	 * {@linkplain #setBeanClassLoader bean class loader}.
-	 */
-	public void setMetadataReaderFactory(MetadataReaderFactory metadataReaderFactory) {
-		Assert.notNull(metadataReaderFactory, "MetadataReaderFactory must not be null");
-		this.metadataReaderFactory = metadataReaderFactory;
-		this.setMetadataReaderFactoryCalled = true;
-	}
-
-	/**
-	 * Set the {@link BeanNameGenerator} to be used when triggering component scanning
-	 * from {@link Configuration} classes and when registering {@link Import}'ed
-	 * configuration classes. The default is a standard {@link AnnotationBeanNameGenerator}
-	 * for scanned components (compatible with the default in {@link ClassPathBeanDefinitionScanner})
-	 * and a variant thereof for imported configuration classes (using unique fully-qualified
-	 * class names instead of standard component overriding).
-	 * <p>Note that this strategy does <em>not</em> apply to {@link Bean} methods.
-	 * <p>This setter is typically only appropriate when configuring the post-processor as
-	 * a standalone bean definition in XML, e.g. not using the dedicated
-	 * {@code AnnotationConfig*} application contexts or the {@code
-	 * <context:annotation-config>} element. Any bean name generator specified against
-	 * the application context will take precedence over any value set here.
-	 *
-	 * @see AnnotationConfigApplicationContext#setBeanNameGenerator(BeanNameGenerator)
-	 * @see AnnotationConfigUtils#CONFIGURATION_BEAN_NAME_GENERATOR
-	 * @since 3.1.1
-	 */
-	public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
-		Assert.notNull(beanNameGenerator, "BeanNameGenerator must not be null");
-		this.localBeanNameGeneratorSet = true;
-		this.componentScanBeanNameGenerator = beanNameGenerator;
-		this.importBeanNameGenerator = beanNameGenerator;
-	}
-
-	@Override
-	public void setEnvironment(Environment environment) {
-		Assert.notNull(environment, "Environment must not be null");
-		this.environment = environment;
-	}
-
-	@Override
-	public void setResourceLoader(ResourceLoader resourceLoader) {
-		Assert.notNull(resourceLoader, "ResourceLoader must not be null");
-		this.resourceLoader = resourceLoader;
-		if (!this.setMetadataReaderFactoryCalled) {
-			this.metadataReaderFactory = new CachingMetadataReaderFactory(resourceLoader);
-		}
-	}
-
-	@Override
-	public void setBeanClassLoader(ClassLoader beanClassLoader) {
-		this.beanClassLoader = beanClassLoader;
-		if (!this.setMetadataReaderFactoryCalled) {
-			this.metadataReaderFactory = new CachingMetadataReaderFactory(beanClassLoader);
-		}
-	}
+    private static final String IMPORT_REGISTRY_BEAN_NAME =
+            ConfigurationClassPostProcessor.class.getName() + ".importRegistry";
 
 
-	/*
-	 * Derive further bean definitions from the configuration classes in the registry.
-	 * registry钩子方法
-	 */
-	@Override
-	public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
-		int registryId = System.identityHashCode(registry);
-		if (this.registriesPostProcessed.contains(registryId)) {
-			throw new IllegalStateException(
-					"postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
-		}
-		if (this.factoriesPostProcessed.contains(registryId)) {
-			throw new IllegalStateException(
-					"postProcessBeanFactory already called on this post-processor against " + registry);
-		}
-		this.registriesPostProcessed.add(registryId);
+    private final Log logger = LogFactory.getLog(getClass());
 
-		processConfigBeanDefinitions(registry);
-	}
+    private SourceExtractor sourceExtractor = new PassThroughSourceExtractor();
 
-	/*
-	 * Prepare the Configuration classes for servicing bean requests at runtime
-	 * by replacing them with CGLIB-enhanced subclasses.
-	 * factory钩子方法
-	 */
-	@Override
-	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-		int factoryId = System.identityHashCode(beanFactory);
-		if (this.factoriesPostProcessed.contains(factoryId)) {
-			throw new IllegalStateException(
-					"postProcessBeanFactory already called on this post-processor against " + beanFactory);
-		}
-		this.factoriesPostProcessed.add(factoryId);
-		if (!this.registriesPostProcessed.contains(factoryId)) {
-			// BeanDefinitionRegistryPostProcessor hook apparently not supported...
-			// Simply call processConfigurationClasses lazily at this point then.
-			processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
-		}
+    private ProblemReporter problemReporter = new FailFastProblemReporter();
 
-		enhanceConfigurationClasses(beanFactory);
-		beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
-	}
+    @Nullable
+    private Environment environment;
 
-	/**
-	 * Build and validate a configuration model based on the registry of
-	 * {@link Configuration} classes.
-	 */
-	public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
-		List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
-		String[] candidateNames = registry.getBeanDefinitionNames();
+    private ResourceLoader resourceLoader = new DefaultResourceLoader();
 
-		for (String beanName : candidateNames) {
-			BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+    @Nullable
+    private ClassLoader beanClassLoader = ClassUtils.getDefaultClassLoader();
 
-			if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) || ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
-				}
-			}
-			// 判断是否有@Configuration、@Component（还包括@ComponentScan、@Import、@ImportResource）、方法上的@Bean注解
-			else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
-				configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
-			}
-		}
+    private MetadataReaderFactory metadataReaderFactory = new CachingMetadataReaderFactory();
 
-		// Return immediately if no @Configuration classes were found
-		if (configCandidates.isEmpty()) {
-			return;
-		}
+    private boolean setMetadataReaderFactoryCalled = false;
 
-		// 对所有的beanDefinition进行排序
-		// Sort by previously determined @Order value, if applicable
-		configCandidates.sort((bd1, bd2) -> {
-			int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
-			int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
-			return Integer.compare(i1, i2);
-		});
+    private final Set<Integer> registriesPostProcessed = new HashSet<>();
 
-		// Detect any custom bean name generation strategy supplied through the enclosing application context
-		SingletonBeanRegistry sbr = null;
-		if (registry instanceof SingletonBeanRegistry) {
-			sbr = (SingletonBeanRegistry) registry;
-			if (!this.localBeanNameGeneratorSet) {
-				BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(CONFIGURATION_BEAN_NAME_GENERATOR);
-				if (generator != null) {
-					this.componentScanBeanNameGenerator = generator;
-					this.importBeanNameGenerator = generator;
-				}
-			}
-		}
+    private final Set<Integer> factoriesPostProcessed = new HashSet<>();
 
-		if (this.environment == null) {
-			this.environment = new StandardEnvironment();
-		}
+    @Nullable
+    private ConfigurationClassBeanDefinitionReader reader;
 
-		// 上面流程完成了各类注解的判断，将包含这些注解的beanDefinition收集到Set<BeanDefinitionHolder> candidates容器中，
-		// 而这些beanDefinition后续的处理，以及beanDefinition里面@ComponentScan、@Import、@ImportResorce注解的路径，
-		// 还依赖于@Configuration 相关的ConfigurationClassParser类（递归流程）
-		// Parse each @Configuration class
-		ConfigurationClassParser parser = new ConfigurationClassParser(this.metadataReaderFactory,
-				this.problemReporter, this.environment, this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+    private boolean localBeanNameGeneratorSet = false;
 
-		Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
-		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
-		do {
-			parser.parse(candidates);
-			parser.validate();
+    /* Using short class names as default bean names */
+    private BeanNameGenerator componentScanBeanNameGenerator = new AnnotationBeanNameGenerator();
 
-			Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
-			configClasses.removeAll(alreadyParsed);
+    /* Using fully qualified class names as default bean names */
+    private BeanNameGenerator importBeanNameGenerator = new AnnotationBeanNameGenerator() {
+        @Override
+        protected String buildDefaultBeanName(BeanDefinition definition) {
+            String beanClassName = definition.getBeanClassName();
+            Assert.state(beanClassName != null, "No bean class name set");
+            return beanClassName;
+        }
+    };
 
-			// Read the model and create bean definitions based on its content
-			if (this.reader == null) {
-				this.reader = new ConfigurationClassBeanDefinitionReader(
-						registry, this.sourceExtractor, this.resourceLoader, this.environment,
-						this.importBeanNameGenerator, parser.getImportRegistry());
-			}
-			// 基于上面收集到的@Import、@ImportSource、@Bean注解信息，完成beanDefinition的注册
-			this.reader.loadBeanDefinitions(configClasses);
-			alreadyParsed.addAll(configClasses);
+    /*
+     * @Priority中优先级最高，会最先被实例化和调用钩子方法
+     */
+    @Override
+    public int getOrder() {
+        return Ordered.LOWEST_PRECEDENCE;  // within PriorityOrdered
+    }
 
-			candidates.clear();
-			if (registry.getBeanDefinitionCount() > candidateNames.length) {
-				String[] newCandidateNames = registry.getBeanDefinitionNames();
-				Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
-				Set<String> alreadyParsedClasses = new HashSet<>();
-				for (ConfigurationClass configurationClass : alreadyParsed) {
-					alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
-				}
-				for (String candidateName : newCandidateNames) {
-					if (!oldCandidateNames.contains(candidateName)) {
-						BeanDefinition bd = registry.getBeanDefinition(candidateName);
-						if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &&
-								!alreadyParsedClasses.contains(bd.getBeanClassName())) {
-							candidates.add(new BeanDefinitionHolder(bd, candidateName));
-						}
-					}
-				}
-				candidateNames = newCandidateNames;
-			}
-		}
-		while (!candidates.isEmpty());
+    /**
+     * Set the {@link SourceExtractor} to use for generated bean definitions
+     * that correspond to {@link Bean} factory methods.
+     */
+    public void setSourceExtractor(@Nullable SourceExtractor sourceExtractor) {
+        this.sourceExtractor = (sourceExtractor != null ? sourceExtractor : new PassThroughSourceExtractor());
+    }
 
-		// Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
-		if (sbr != null && !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
-			sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
-		}
+    /**
+     * Set the {@link ProblemReporter} to use.
+     * <p>Used to register any problems detected with {@link Configuration} or {@link Bean}
+     * declarations. For instance, an @Bean method marked as {@code final} is illegal
+     * and would be reported as a problem. Defaults to {@link FailFastProblemReporter}.
+     */
+    public void setProblemReporter(@Nullable ProblemReporter problemReporter) {
+        this.problemReporter = (problemReporter != null ? problemReporter : new FailFastProblemReporter());
+    }
 
-		if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
-			// Clear cache in externally provided MetadataReaderFactory; this is a no-op
-			// for a shared cache since it'll be cleared by the ApplicationContext.
-			((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
-		}
-	}
+    /**
+     * Set the {@link MetadataReaderFactory} to use.
+     * <p>Default is a {@link CachingMetadataReaderFactory} for the specified
+     * {@linkplain #setBeanClassLoader bean class loader}.
+     */
+    public void setMetadataReaderFactory(MetadataReaderFactory metadataReaderFactory) {
+        Assert.notNull(metadataReaderFactory, "MetadataReaderFactory must not be null");
+        this.metadataReaderFactory = metadataReaderFactory;
+        this.setMetadataReaderFactoryCalled = true;
+    }
 
-	/**
-	 * Post-processes a BeanFactory in search of Configuration class BeanDefinitions;
-	 * any candidates are then enhanced by a {@link ConfigurationClassEnhancer}.
-	 * Candidate status is determined by BeanDefinition attribute metadata.
-	 *
-	 * @see ConfigurationClassEnhancer
-	 */
-	public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
-		Map<String, AbstractBeanDefinition> configBeanDefs = new LinkedHashMap<>();
-		for (String beanName : beanFactory.getBeanDefinitionNames()) {
-			BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
-			if (ConfigurationClassUtils.isFullConfigurationClass(beanDef)) {
-				if (!(beanDef instanceof AbstractBeanDefinition)) {
-					throw new BeanDefinitionStoreException("Cannot enhance @Configuration bean definition '" +
-							beanName + "' since it is not stored in an AbstractBeanDefinition subclass");
-				} else if (logger.isInfoEnabled() && beanFactory.containsSingleton(beanName)) {
-					logger.info("Cannot enhance @Configuration bean definition '" + beanName +
-							"' since its singleton instance has been created too early. The typical cause " +
-							"is a non-static @Bean method with a BeanDefinitionRegistryPostProcessor " +
-							"return type: Consider declaring such methods as 'static'.");
-				}
-				configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
-			}
-		}
-		if (configBeanDefs.isEmpty()) {
-			// nothing to enhance -> return immediately
-			return;
-		}
+    /**
+     * Set the {@link BeanNameGenerator} to be used when triggering component scanning
+     * from {@link Configuration} classes and when registering {@link Import}'ed
+     * configuration classes. The default is a standard {@link AnnotationBeanNameGenerator}
+     * for scanned components (compatible with the default in {@link ClassPathBeanDefinitionScanner})
+     * and a variant thereof for imported configuration classes (using unique fully-qualified
+     * class names instead of standard component overriding).
+     * <p>Note that this strategy does <em>not</em> apply to {@link Bean} methods.
+     * <p>This setter is typically only appropriate when configuring the post-processor as
+     * a standalone bean definition in XML, e.g. not using the dedicated
+     * {@code AnnotationConfig*} application contexts or the {@code
+     * <context:annotation-config>} element. Any bean name generator specified against
+     * the application context will take precedence over any value set here.
+     *
+     * @see AnnotationConfigApplicationContext#setBeanNameGenerator(BeanNameGenerator)
+     * @see AnnotationConfigUtils#CONFIGURATION_BEAN_NAME_GENERATOR
+     * @since 3.1.1
+     */
+    public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
+        Assert.notNull(beanNameGenerator, "BeanNameGenerator must not be null");
+        this.localBeanNameGeneratorSet = true;
+        this.componentScanBeanNameGenerator = beanNameGenerator;
+        this.importBeanNameGenerator = beanNameGenerator;
+    }
 
-		ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
-		for (Map.Entry<String, AbstractBeanDefinition> entry : configBeanDefs.entrySet()) {
-			AbstractBeanDefinition beanDef = entry.getValue();
-			// If a @Configuration class gets proxied, always proxy the target class
-			beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
-			try {
-				// Set enhanced subclass of the user-specified bean class
-				Class<?> configClass = beanDef.resolveBeanClass(this.beanClassLoader);
-				if (configClass != null) {
-					Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
-					if (configClass != enhancedClass) {
-						if (logger.isTraceEnabled()) {
-							logger.trace(String.format("Replacing bean definition '%s' existing class '%s' with " +
-									"enhanced class '%s'", entry.getKey(), configClass.getName(), enhancedClass.getName()));
-						}
-						beanDef.setBeanClass(enhancedClass);
-					}
-				}
-			} catch (Throwable ex) {
-				throw new IllegalStateException("Cannot load configuration class: " + beanDef.getBeanClassName(), ex);
-			}
-		}
-	}
+    @Override
+    public void setEnvironment(Environment environment) {
+        Assert.notNull(environment, "Environment must not be null");
+        this.environment = environment;
+    }
 
-	private static class ImportAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter {
-		private final BeanFactory beanFactory;
+    @Override
+    public void setResourceLoader(ResourceLoader resourceLoader) {
+        Assert.notNull(resourceLoader, "ResourceLoader must not be null");
+        this.resourceLoader = resourceLoader;
+        if (!this.setMetadataReaderFactoryCalled) {
+            this.metadataReaderFactory = new CachingMetadataReaderFactory(resourceLoader);
+        }
+    }
 
-		public ImportAwareBeanPostProcessor(BeanFactory beanFactory) {
-			this.beanFactory = beanFactory;
-		}
+    @Override
+    public void setBeanClassLoader(ClassLoader beanClassLoader) {
+        this.beanClassLoader = beanClassLoader;
+        if (!this.setMetadataReaderFactoryCalled) {
+            this.metadataReaderFactory = new CachingMetadataReaderFactory(beanClassLoader);
+        }
+    }
 
-		@Override
-		public PropertyValues postProcessProperties(@Nullable PropertyValues pvs, Object bean, String beanName) {
-			// Inject the BeanFactory before AutowiredAnnotationBeanPostProcessor's
-			// postProcessProperties method attempts to autowire other configuration beans.
-			if (bean instanceof EnhancedConfiguration) {
-				((EnhancedConfiguration) bean).setBeanFactory(this.beanFactory);
-			}
-			return pvs;
-		}
+    /*
+     * Derive further bean definitions from the configuration classes in the registry.
+     * registry钩子方法
+     */
+    @Override
+    public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+        int registryId = System.identityHashCode(registry);
+        if (this.registriesPostProcessed.contains(registryId)) {
+            throw new IllegalStateException(
+                    "postProcessBeanDefinitionRegistry already called on this post-processor against " + registry);
+        }
+        if (this.factoriesPostProcessed.contains(registryId)) {
+            throw new IllegalStateException(
+                    "postProcessBeanFactory already called on this post-processor against " + registry);
+        }
+        this.registriesPostProcessed.add(registryId);
 
-		@Override
-		public Object postProcessBeforeInitialization(Object bean, String beanName) {
-			if (bean instanceof ImportAware) {
-				ImportRegistry ir = this.beanFactory.getBean(IMPORT_REGISTRY_BEAN_NAME, ImportRegistry.class);
-				AnnotationMetadata importingClass = ir.getImportingClassFor(bean.getClass().getSuperclass().getName());
-				if (importingClass != null) {
-					((ImportAware) bean).setImportMetadata(importingClass);
-				}
-			}
-			return bean;
-		}
-	}
+        processConfigBeanDefinitions(registry);
+    }
+
+    /*
+     * Prepare the Configuration classes for servicing bean requests at runtime
+     * by replacing them with CGLIB-enhanced subclasses.
+     * factory钩子方法，将会在完成xml解析和beanDefinition封装工作之后执行
+     */
+    @Override
+    public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {
+        int factoryId = System.identityHashCode(beanFactory);
+        if (this.factoriesPostProcessed.contains(factoryId)) {
+            throw new IllegalStateException(
+                    "postProcessBeanFactory already called on this post-processor against " + beanFactory);
+        }
+        this.factoriesPostProcessed.add(factoryId);
+        if (!this.registriesPostProcessed.contains(factoryId)) {
+            // BeanDefinitionRegistryPostProcessor hook apparently not supported...
+            // Simply call processConfigurationClasses lazily at this point then.
+            processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
+        }
+
+        enhanceConfigurationClasses(beanFactory);
+        beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
+    }
+
+    /**
+     * Build and validate a configuration model based on the registry of
+     * {@link Configuration} classes.
+     */
+    public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
+        List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
+        String[] candidateNames = registry.getBeanDefinitionNames();
+
+        for (String beanName : candidateNames) {
+            BeanDefinition beanDef = registry.getBeanDefinition(beanName);
+
+            if (ConfigurationClassUtils.isFullConfigurationClass(beanDef) || ConfigurationClassUtils.isLiteConfigurationClass(beanDef)) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Bean definition has already been processed as a configuration class: " + beanDef);
+                }
+            }
+            // 收集@Configuration、@Component（还包括@ComponentScan、@Import、@ImportResource）、方法上的@Bean注解
+            else if (ConfigurationClassUtils.checkConfigurationClassCandidate(beanDef, this.metadataReaderFactory)) {
+                configCandidates.add(new BeanDefinitionHolder(beanDef, beanName));
+            }
+        }
+
+        // Return immediately if no @Configuration classes were found
+        if (configCandidates.isEmpty()) {
+            return;
+        }
+
+        // 对所有的beanDefinition进行排序
+        // Sort by previously determined @Order value, if applicable
+        configCandidates.sort((bd1, bd2) -> {
+            int i1 = ConfigurationClassUtils.getOrder(bd1.getBeanDefinition());
+            int i2 = ConfigurationClassUtils.getOrder(bd2.getBeanDefinition());
+            return Integer.compare(i1, i2);
+        });
+
+        // Detect any custom bean name generation strategy supplied through the enclosing application context
+        SingletonBeanRegistry sbr = null;
+        if (registry instanceof SingletonBeanRegistry) {
+            sbr = (SingletonBeanRegistry) registry;
+            if (!this.localBeanNameGeneratorSet) {
+                BeanNameGenerator generator = (BeanNameGenerator) sbr.getSingleton(CONFIGURATION_BEAN_NAME_GENERATOR);
+                if (generator != null) {
+                    this.componentScanBeanNameGenerator = generator;
+                    this.importBeanNameGenerator = generator;
+                }
+            }
+        }
+
+        if (this.environment == null) {
+            this.environment = new StandardEnvironment();
+        }
+
+        // ConfigurationClassParser类，解析已收集注解的beanDefinition（递归流程）
+        // Parse each @Configuration class
+        ConfigurationClassParser parser = new ConfigurationClassParser(this.metadataReaderFactory,
+                this.problemReporter, this.environment, this.resourceLoader, this.componentScanBeanNameGenerator, registry);
+
+        // Set<BeanDefinitionHolder> candidates容器，存储已收集注解的beanDefinition
+        Set<BeanDefinitionHolder> candidates = new LinkedHashSet<>(configCandidates);
+        Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
+        do {
+            // 解析各类注解（递归流程）
+            // @ComponentScan注解的支持，最终会调用scanner.doScan方法，与xml解析方式启动的component-scan殊途同归
+            // @Import注解的支持，一般应用于需要引用到第三方jar包的类的场景
+            parser.parse(candidates);
+            parser.validate();
+
+            Set<ConfigurationClass> configClasses = new LinkedHashSet<>(parser.getConfigurationClasses());
+            configClasses.removeAll(alreadyParsed);
+
+            // Read the model and create bean definitions based on its content
+            if (this.reader == null) {
+                this.reader = new ConfigurationClassBeanDefinitionReader(
+                        registry, this.sourceExtractor, this.resourceLoader, this.environment,
+                        this.importBeanNameGenerator, parser.getImportRegistry());
+            }
+            // reader读取器，完成已收集注解的beanDefinition的注册
+            this.reader.loadBeanDefinitions(configClasses);
+            alreadyParsed.addAll(configClasses);
+
+            candidates.clear();
+            if (registry.getBeanDefinitionCount() > candidateNames.length) {
+                // 可能引入新的beanDefinition（递归流程）
+                String[] newCandidateNames = registry.getBeanDefinitionNames();
+                Set<String> oldCandidateNames = new HashSet<>(Arrays.asList(candidateNames));
+                Set<String> alreadyParsedClasses = new HashSet<>();
+                for (ConfigurationClass configurationClass : alreadyParsed) {
+                    alreadyParsedClasses.add(configurationClass.getMetadata().getClassName());
+                }
+                for (String candidateName : newCandidateNames) {
+                    if (!oldCandidateNames.contains(candidateName)) {
+                        BeanDefinition bd = registry.getBeanDefinition(candidateName);
+                        if (ConfigurationClassUtils.checkConfigurationClassCandidate(bd, this.metadataReaderFactory) &&
+                                !alreadyParsedClasses.contains(bd.getBeanClassName())) {
+                            candidates.add(new BeanDefinitionHolder(bd, candidateName));
+                        }
+                    }
+                }
+                candidateNames = newCandidateNames;
+            }
+        } while (!candidates.isEmpty());
+
+        // Register the ImportRegistry as a bean in order to support ImportAware @Configuration classes
+        if (sbr != null && !sbr.containsSingleton(IMPORT_REGISTRY_BEAN_NAME)) {
+            sbr.registerSingleton(IMPORT_REGISTRY_BEAN_NAME, parser.getImportRegistry());
+        }
+
+        if (this.metadataReaderFactory instanceof CachingMetadataReaderFactory) {
+            // Clear cache in externally provided MetadataReaderFactory; this is a no-op
+            // for a shared cache since it'll be cleared by the ApplicationContext.
+            ((CachingMetadataReaderFactory) this.metadataReaderFactory).clearCache();
+        }
+    }
+
+    /**
+     * Post-processes a BeanFactory in search of Configuration class BeanDefinitions;
+     * any candidates are then enhanced by a {@link ConfigurationClassEnhancer}.
+     * Candidate status is determined by BeanDefinition attribute metadata.
+     *
+     * @see ConfigurationClassEnhancer
+     */
+    public void enhanceConfigurationClasses(ConfigurableListableBeanFactory beanFactory) {
+        Map<String, AbstractBeanDefinition> configBeanDefs = new LinkedHashMap<>();
+        for (String beanName : beanFactory.getBeanDefinitionNames()) {
+            BeanDefinition beanDef = beanFactory.getBeanDefinition(beanName);
+            if (ConfigurationClassUtils.isFullConfigurationClass(beanDef)) {
+                if (!(beanDef instanceof AbstractBeanDefinition)) {
+                    throw new BeanDefinitionStoreException("Cannot enhance @Configuration bean definition '" +
+                            beanName + "' since it is not stored in an AbstractBeanDefinition subclass");
+                } else if (logger.isInfoEnabled() && beanFactory.containsSingleton(beanName)) {
+                    logger.info("Cannot enhance @Configuration bean definition '" + beanName +
+                            "' since its singleton instance has been created too early. The typical cause " +
+                            "is a non-static @Bean method with a BeanDefinitionRegistryPostProcessor " +
+                            "return type: Consider declaring such methods as 'static'.");
+                }
+                configBeanDefs.put(beanName, (AbstractBeanDefinition) beanDef);
+            }
+        }
+        if (configBeanDefs.isEmpty()) {
+            // nothing to enhance -> return immediately
+            return;
+        }
+
+        ConfigurationClassEnhancer enhancer = new ConfigurationClassEnhancer();
+        for (Map.Entry<String, AbstractBeanDefinition> entry : configBeanDefs.entrySet()) {
+            AbstractBeanDefinition beanDef = entry.getValue();
+            // If a @Configuration class gets proxied, always proxy the target class
+            beanDef.setAttribute(AutoProxyUtils.PRESERVE_TARGET_CLASS_ATTRIBUTE, Boolean.TRUE);
+            try {
+                // Set enhanced subclass of the user-specified bean class
+                Class<?> configClass = beanDef.resolveBeanClass(this.beanClassLoader);
+                if (configClass != null) {
+                    Class<?> enhancedClass = enhancer.enhance(configClass, this.beanClassLoader);
+                    if (configClass != enhancedClass) {
+                        if (logger.isTraceEnabled()) {
+                            logger.trace(String.format("Replacing bean definition '%s' existing class '%s' with " +
+                                    "enhanced class '%s'", entry.getKey(), configClass.getName(), enhancedClass.getName()));
+                        }
+                        beanDef.setBeanClass(enhancedClass);
+                    }
+                }
+            } catch (Throwable ex) {
+                throw new IllegalStateException("Cannot load configuration class: " + beanDef.getBeanClassName(), ex);
+            }
+        }
+    }
+
+    private static class ImportAwareBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter {
+        private final BeanFactory beanFactory;
+
+        public ImportAwareBeanPostProcessor(BeanFactory beanFactory) {
+            this.beanFactory = beanFactory;
+        }
+
+        @Override
+        public PropertyValues postProcessProperties(@Nullable PropertyValues pvs, Object bean, String beanName) {
+            // Inject the BeanFactory before AutowiredAnnotationBeanPostProcessor's
+            // postProcessProperties method attempts to autowire other configuration beans.
+            if (bean instanceof EnhancedConfiguration) {
+                ((EnhancedConfiguration) bean).setBeanFactory(this.beanFactory);
+            }
+            return pvs;
+        }
+
+        @Override
+        public Object postProcessBeforeInitialization(Object bean, String beanName) {
+            if (bean instanceof ImportAware) {
+                ImportRegistry ir = this.beanFactory.getBean(IMPORT_REGISTRY_BEAN_NAME, ImportRegistry.class);
+                AnnotationMetadata importingClass = ir.getImportingClassFor(bean.getClass().getSuperclass().getName());
+                if (importingClass != null) {
+                    ((ImportAware) bean).setImportMetadata(importingClass);
+                }
+            }
+            return bean;
+        }
+    }
 }

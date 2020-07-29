@@ -1344,7 +1344,7 @@ public class BeanDefinitionParserDelegate {
 			NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 			if (handler != null) {
 
-				//调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象
+				// 调用NamespaceHandler处理类的decorate方法，开始具体装饰过程，并返回装饰完的对象
                 // org.springframework.beans.factory.xml.SimplePropertyNamespaceHandler
 				BeanDefinitionHolder decorated =
 						handler.decorate(node, originalDef, new ParserContext(this.readerContext, this, containingBd));

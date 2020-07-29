@@ -258,9 +258,11 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		// 扫描basePackages
 		doScan(basePackages);
 
-		// 注册基础架构角色BeanPostProcessor的beanDefinition（下面有些可能在前面ComponentScanBeanDefinitionParser.parse方法中已经注册了）
-		// 包括internalConfigurationAnnotationProcessor、internalAutowiredAnnotationProcessor、
-		// internalCommonAnnotationProcessor、internalEventListenerProcessor、internalEventListenerFactory等
+        // 注册基础架构角色BeanPostProcessor的beanDefinition
+        // internalConfigurationAnnotationProcessor，对应ConfigurationClassPostProcessor，处理@Configuration、@Component（还包括@ComponentScan、@Import、@ImportResource）、方法上的@Bean注解
+        // internalAutowiredAnnotationProcessor，对应AutowiredAnnotationProcessor，处理@Autowired、@Value、@Inject
+        // internalCommonAnnotationProcessor，对应CommonAnnotationBeanPostProcessor，处理@PreDestory、@PostConstruct、@Resource、@EJB、@WebServiceRef
+        // internalEventListenerProcessor和internalEventListenerFactory，对应EventListenerProcessor和EventListenerFactory，处理@EventListener及其工厂
 		// Register annotation config processors, if necessary.
 		if (this.includeAnnotationConfig) {
 			AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);

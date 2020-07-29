@@ -45,126 +45,134 @@ import java.util.regex.Pattern;
  */
 class ComponentScanAnnotationParser {
 
-	private final Environment environment;
+    private final Environment environment;
 
-	private final ResourceLoader resourceLoader;
+    private final ResourceLoader resourceLoader;
 
-	private final BeanNameGenerator beanNameGenerator;
+    private final BeanNameGenerator beanNameGenerator;
 
-	private final BeanDefinitionRegistry registry;
+    private final BeanDefinitionRegistry registry;
 
 
-	public ComponentScanAnnotationParser(Environment environment, ResourceLoader resourceLoader,
-										 BeanNameGenerator beanNameGenerator, BeanDefinitionRegistry registry) {
+    public ComponentScanAnnotationParser(Environment environment, ResourceLoader resourceLoader,
+                                         BeanNameGenerator beanNameGenerator, BeanDefinitionRegistry registry) {
 
-		this.environment = environment;
-		this.resourceLoader = resourceLoader;
-		this.beanNameGenerator = beanNameGenerator;
-		this.registry = registry;
-	}
+        this.environment = environment;
+        this.resourceLoader = resourceLoader;
+        this.beanNameGenerator = beanNameGenerator;
+        this.registry = registry;
+    }
 
-	public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
-		ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(this.registry,
-				componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
+    public Set<BeanDefinitionHolder> parse(AnnotationAttributes componentScan, final String declaringClass) {
+        // useDefaultFilters，约定大于配置，springboot核心思想的体现
+        ClassPathBeanDefinitionScanner scanner = new ClassPathBeanDefinitionScanner(
+                this.registry, componentScan.getBoolean("useDefaultFilters"), this.environment, this.resourceLoader);
 
-		Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
-		boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
-		scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator : BeanUtils.instantiateClass(generatorClass));
+        // nameGenerator属性，指定bean的id生成策略
+        Class<? extends BeanNameGenerator> generatorClass = componentScan.getClass("nameGenerator");
+        boolean useInheritedGenerator = (BeanNameGenerator.class == generatorClass);
+        scanner.setBeanNameGenerator(useInheritedGenerator ? this.beanNameGenerator : BeanUtils.instantiateClass(generatorClass));
 
-		ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
-		if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
-			scanner.setScopedProxyMode(scopedProxyMode);
-		} else {
-			Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
-			scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
-		}
+        // scopedProxy属性，scope代理有3个选项，no(默认值)、interfaces(接口代理)、targetClass（类代理）
+        ScopedProxyMode scopedProxyMode = componentScan.getEnum("scopedProxy");
+        if (scopedProxyMode != ScopedProxyMode.DEFAULT) {
+            scanner.setScopedProxyMode(scopedProxyMode);
+        } else {
+            Class<? extends ScopeMetadataResolver> resolverClass = componentScan.getClass("scopeResolver");
+            scanner.setScopeMetadataResolver(BeanUtils.instantiateClass(resolverClass));
+        }
 
-		scanner.setResourcePattern(componentScan.getString("resourcePattern"));
+        // resourcePattern属性，对资源进行筛选的正则表达式
+        scanner.setResourcePattern(componentScan.getString("resourcePattern"));
 
-		for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
-			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
-				scanner.addIncludeFilter(typeFilter);
-			}
-		}
-		for (AnnotationAttributes filter : componentScan.getAnnotationArray("excludeFilters")) {
-			for (TypeFilter typeFilter : typeFiltersFor(filter)) {
-				scanner.addExcludeFilter(typeFilter);
-			}
-		}
+        // includeFilters属性
+        for (AnnotationAttributes filter : componentScan.getAnnotationArray("includeFilters")) {
+            for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+                scanner.addIncludeFilter(typeFilter);
+            }
+        }
+        // excludeFilters属性
+        for (AnnotationAttributes filter : componentScan.getAnnotationArray("excludeFilters")) {
+            for (TypeFilter typeFilter : typeFiltersFor(filter)) {
+                scanner.addExcludeFilter(typeFilter);
+            }
+        }
 
-		boolean lazyInit = componentScan.getBoolean("lazyInit");
-		if (lazyInit) {
-			scanner.getBeanDefinitionDefaults().setLazyInit(true);
-		}
+        // lazyInit属性
+        boolean lazyInit = componentScan.getBoolean("lazyInit");
+        if (lazyInit) {
+            scanner.getBeanDefinitionDefaults().setLazyInit(true);
+        }
 
-		Set<String> basePackages = new LinkedHashSet<>();
-		String[] basePackagesArray = componentScan.getStringArray("basePackages");
-		for (String pkg : basePackagesArray) {
-			String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
-					ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
-			Collections.addAll(basePackages, tokenized);
-		}
-		for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
-			basePackages.add(ClassUtils.getPackageName(clazz));
-		}
-		if (basePackages.isEmpty()) {
-			basePackages.add(ClassUtils.getPackageName(declaringClass));
-		}
+        // basePackages属性
+        Set<String> basePackages = new LinkedHashSet<>();
+        String[] basePackagesArray = componentScan.getStringArray("basePackages");
+        for (String pkg : basePackagesArray) {
+            String[] tokenized = StringUtils.tokenizeToStringArray(this.environment.resolvePlaceholders(pkg),
+                    ConfigurableApplicationContext.CONFIG_LOCATION_DELIMITERS);
+            Collections.addAll(basePackages, tokenized);
+        }
+        for (Class<?> clazz : componentScan.getClassArray("basePackageClasses")) {
+            basePackages.add(ClassUtils.getPackageName(clazz));
+        }
+        if (basePackages.isEmpty()) {
+            basePackages.add(ClassUtils.getPackageName(declaringClass));
+        }
 
-		scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
-			@Override
-			protected boolean matchClassName(String className) {
-				return declaringClass.equals(className);
-			}
-		});
+        scanner.addExcludeFilter(new AbstractTypeHierarchyTraversingFilter(false, false) {
+            @Override
+            protected boolean matchClassName(String className) {
+                return declaringClass.equals(className);
+            }
+        });
 
-		// 这里和xml解析方式的component-scan殊途同归
-		return scanner.doScan(StringUtils.toStringArray(basePackages));
-	}
+        // 这里和xml解析方式启动的component-scan殊途同归
+        return scanner.doScan(StringUtils.toStringArray(basePackages));
+    }
 
-	private List<TypeFilter> typeFiltersFor(AnnotationAttributes filterAttributes) {
-		List<TypeFilter> typeFilters = new ArrayList<>();
-		FilterType filterType = filterAttributes.getEnum("type");
+    private List<TypeFilter> typeFiltersFor(AnnotationAttributes filterAttributes) {
+        List<TypeFilter> typeFilters = new ArrayList<>();
+        FilterType filterType = filterAttributes.getEnum("type");
 
-		for (Class<?> filterClass : filterAttributes.getClassArray("classes")) {
-			switch (filterType) {
-				case ANNOTATION:
-					Assert.isAssignable(Annotation.class, filterClass,
-							"@ComponentScan ANNOTATION type filter requires an annotation type");
-					@SuppressWarnings("unchecked")
-					Class<Annotation> annotationType = (Class<Annotation>) filterClass;
-					typeFilters.add(new AnnotationTypeFilter(annotationType));
-					break;
-				case ASSIGNABLE_TYPE:
-					typeFilters.add(new AssignableTypeFilter(filterClass));
-					break;
-				case CUSTOM:
-					Assert.isAssignable(TypeFilter.class, filterClass,
-							"@ComponentScan CUSTOM type filter requires a TypeFilter implementation");
-					TypeFilter filter = BeanUtils.instantiateClass(filterClass, TypeFilter.class);
-					ParserStrategyUtils.invokeAwareMethods(
-							filter, this.environment, this.resourceLoader, this.registry);
-					typeFilters.add(filter);
-					break;
-				default:
-					throw new IllegalArgumentException("Filter type not supported with Class value: " + filterType);
-			}
-		}
+        for (Class<?> filterClass : filterAttributes.getClassArray("classes")) {
+            switch (filterType) {
+                case ANNOTATION:
+                    Assert.isAssignable(Annotation.class, filterClass,
+                            "@ComponentScan ANNOTATION type filter requires an annotation type");
+                    @SuppressWarnings("unchecked")
+                    Class<Annotation> annotationType = (Class<Annotation>) filterClass;
+                    typeFilters.add(new AnnotationTypeFilter(annotationType));
+                    break;
+                case ASSIGNABLE_TYPE:
+                    typeFilters.add(new AssignableTypeFilter(filterClass));
+                    break;
+                case CUSTOM:
+                    Assert.isAssignable(TypeFilter.class, filterClass,
+                            "@ComponentScan CUSTOM type filter requires a TypeFilter implementation");
+                    TypeFilter filter = BeanUtils.instantiateClass(filterClass, TypeFilter.class);
+                    ParserStrategyUtils.invokeAwareMethods(
+                            filter, this.environment, this.resourceLoader, this.registry);
+                    typeFilters.add(filter);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Filter type not supported with Class value: " + filterType);
+            }
+        }
 
-		for (String expression : filterAttributes.getStringArray("pattern")) {
-			switch (filterType) {
-				case ASPECTJ:
-					typeFilters.add(new AspectJTypeFilter(expression, this.resourceLoader.getClassLoader()));
-					break;
-				case REGEX:
-					typeFilters.add(new RegexPatternTypeFilter(Pattern.compile(expression)));
-					break;
-				default:
-					throw new IllegalArgumentException("Filter type not supported with String pattern: " + filterType);
-			}
-		}
+        for (String expression : filterAttributes.getStringArray("pattern")) {
+            switch (filterType) {
+                case ASPECTJ:
+                    typeFilters.add(new AspectJTypeFilter(expression, this.resourceLoader.getClassLoader()));
+                    break;
+                case REGEX:
+                    typeFilters.add(new RegexPatternTypeFilter(Pattern.compile(expression)));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Filter type not supported with String pattern: " + filterType);
+            }
+        }
 
-		return typeFilters;
-	}
+        return typeFilters;
+    }
 
 }

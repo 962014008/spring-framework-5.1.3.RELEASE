@@ -16,10 +16,6 @@
 
 package org.springframework.context.annotation;
 
-import java.util.Set;
-
-import org.w3c.dom.Element;
-
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
@@ -27,6 +23,9 @@ import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
 import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.lang.Nullable;
+import org.w3c.dom.Element;
+
+import java.util.Set;
 
 /**
  * Parser for the &lt;context:annotation-config/&gt; element.
@@ -44,6 +43,11 @@ public class AnnotationConfigBeanDefinitionParser implements BeanDefinitionParse
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		Object source = parserContext.extractSource(element);
 
+        // 注册基础架构角色BeanPostProcessor的beanDefinition
+        // internalConfigurationAnnotationProcessor，对应ConfigurationClassPostProcessor，处理@Configuration、@Component（还包括@ComponentScan、@Import、@ImportResource）、方法上的@Bean注解
+        // internalAutowiredAnnotationProcessor，对应AutowiredAnnotationProcessor，处理@Autowired、@Value、@Inject
+        // internalCommonAnnotationProcessor，对应CommonAnnotationBeanPostProcessor，处理@PreDestory、@PostConstruct、@Resource、@EJB、@WebServiceRef
+        // internalEventListenerProcessor和internalEventListenerFactory，对应EventListenerProcessor和EventListenerFactory，处理@EventListener及其工厂
 		// Obtain bean definitions for all relevant BeanPostProcessors.
 		Set<BeanDefinitionHolder> processorDefinitions =
 				AnnotationConfigUtils.registerAnnotationConfigProcessors(parserContext.getRegistry(), source);

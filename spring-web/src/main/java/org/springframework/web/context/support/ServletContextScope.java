@@ -16,15 +16,15 @@
 
 package org.springframework.web.context.support;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import javax.servlet.ServletContext;
-
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.ObjectFactory;
 import org.springframework.beans.factory.config.Scope;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
+
+import javax.servlet.ServletContext;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * {@link Scope} wrapper for a ServletContext, i.e. for global web application attributes.
@@ -43,8 +43,9 @@ import org.springframework.util.Assert;
  * {@link org.springframework.web.context.WebApplicationContext#SCOPE_APPLICATION "application"}.
  *
  * @author Juergen Hoeller
- * @since 3.0
  * @see org.springframework.web.context.ContextCleanupListener
+ * @since 3.0
+ * servletContext级别Scope
  */
 public class ServletContextScope implements Scope, DisposableBean {
 
@@ -52,9 +53,9 @@ public class ServletContextScope implements Scope, DisposableBean {
 
 	private final Map<String, Runnable> destructionCallbacks = new LinkedHashMap<>();
 
-
 	/**
 	 * Create a new Scope wrapper for the given ServletContext.
+	 *
 	 * @param servletContext the ServletContext to wrap
 	 */
 	public ServletContextScope(ServletContext servletContext) {
@@ -62,12 +63,13 @@ public class ServletContextScope implements Scope, DisposableBean {
 		this.servletContext = servletContext;
 	}
 
-
 	@Override
 	public Object get(String name, ObjectFactory<?> objectFactory) {
 		Object scopedObject = this.servletContext.getAttribute(name);
 		if (scopedObject == null) {
+			// 调用bean实例化方法
 			scopedObject = objectFactory.getObject();
+			// 把bean实例存入servletContext
 			this.servletContext.setAttribute(name, scopedObject);
 		}
 		return scopedObject;
@@ -81,8 +83,7 @@ public class ServletContextScope implements Scope, DisposableBean {
 			this.servletContext.removeAttribute(name);
 			this.destructionCallbacks.remove(name);
 			return scopedObject;
-		}
-		else {
+		} else {
 			return null;
 		}
 	}
@@ -108,6 +109,7 @@ public class ServletContextScope implements Scope, DisposableBean {
 	/**
 	 * Invoke all registered destruction callbacks.
 	 * To be called on ServletContext shutdown.
+	 *
 	 * @see org.springframework.web.context.ContextCleanupListener
 	 */
 	@Override
@@ -117,5 +119,4 @@ public class ServletContextScope implements Scope, DisposableBean {
 		}
 		this.destructionCallbacks.clear();
 	}
-
 }

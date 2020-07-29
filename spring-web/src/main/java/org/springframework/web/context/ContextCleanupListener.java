@@ -16,15 +16,14 @@
 
 package org.springframework.web.context;
 
-import java.util.Enumeration;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.DisposableBean;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import org.springframework.beans.factory.DisposableBean;
+import java.util.Enumeration;
 
 /**
  * Web application listener that cleans up remaining disposable attributes
@@ -47,6 +46,9 @@ public class ContextCleanupListener implements ServletContextListener {
 	public void contextInitialized(ServletContextEvent event) {
 	}
 
+	/*
+	 * Servlet规范下，Tomcat等容器关闭时，会调用ServletContextListener的contextDestroyed方法
+	 */
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
 		cleanupAttributes(event.getServletContext());
@@ -66,6 +68,7 @@ public class ContextCleanupListener implements ServletContextListener {
 				Object attrValue = sc.getAttribute(attrName);
 				if (attrValue instanceof DisposableBean) {
 					try {
+						// 调用包括disposableBeanAdapter在内所有disposableBean的destroy方法
 						((DisposableBean) attrValue).destroy();
 					}
 					catch (Throwable ex) {

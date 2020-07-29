@@ -16,12 +16,12 @@
 
 package org.springframework.web.context.request;
 
-import javax.faces.context.FacesContext;
-
 import org.springframework.core.NamedInheritableThreadLocal;
 import org.springframework.core.NamedThreadLocal;
 import org.springframework.lang.Nullable;
 import org.springframework.util.ClassUtils;
+
+import javax.faces.context.FacesContext;
 
 /**
  * Holder class to expose the web request in the form of a thread-bound
@@ -52,7 +52,6 @@ public abstract class RequestContextHolder  {
 
 	private static final ThreadLocal<RequestAttributes> inheritableRequestAttributesHolder =
 			new NamedInheritableThreadLocal<>("Request context");
-
 
 	/**
 	 * Reset the RequestAttributes for the current thread.
@@ -102,6 +101,7 @@ public abstract class RequestContextHolder  {
 	 */
 	@Nullable
 	public static RequestAttributes getRequestAttributes() {
+		// 从threadLocal或inheritableThreadLocal获取requestAttributes
 		RequestAttributes attributes = requestAttributesHolder.get();
 		if (attributes == null) {
 			attributes = inheritableRequestAttributesHolder.get();

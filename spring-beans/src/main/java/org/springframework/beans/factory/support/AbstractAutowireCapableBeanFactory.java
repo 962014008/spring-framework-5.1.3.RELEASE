@@ -546,10 +546,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			if (logger.isTraceEnabled()) {
                 logger.trace("Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
 			}
-			// 非常重要
+            // 解决单例无参构造器bean实例的循环依赖-关键点1
 			// 这里着重理解，对理解循环依赖帮助非常大，添加三级缓存
 			// instanceWrapper未完全实例化（只是个光杆司令，堆内存的实例是还没有做依赖注入的，但存在instanceWrapper引用指向了该实例）
-			// 参数2是匿名类工厂方法
+            // 参数2是匿名对象工厂方法
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -601,7 +601,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
-			// BeanPostProcessor接口的典型运用3，注册bean销毁时的类DisposableBeanAdapter，后面会执行@PreDestroy
+            // BeanPostProcessor接口的典型运用3，注册bean销毁需要的disposableBeanAdapter
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		} catch (BeanDefinitionValidationException ex) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Invalid destruction signature", ex);
@@ -907,7 +907,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param bean     the raw bean instance
 	 * @return the object to expose as bean reference
 	 * <p>
-	 * 三级缓存对象工厂 ObjectFactory.getObject()调用到这个方法
+     * 三级缓存对象工厂ObjectFactory.getObject()调用到这个方法
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
@@ -1025,7 +1025,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	protected void applyMergedBeanDefinitionPostProcessors(RootBeanDefinition mbd, Class<?> beanType, String beanName) {
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
-			// 注解（依赖注入等相关）的收集和装配过程，通过MergedBeanDefinitionPostProcessor合并依赖注入的属性到beanDefinition
+            // 扩展点的埋点方式-样例1
+            // 遍历所有beanPostProcessor，在bean的实例化关键过程（如构造器实例化过程、IOC依赖注入、AOP实现等），执行埋点操作，达到干预核心流程的目的，
+            // 这里MergedBeanDefinitionPostProcessor的关注点：注解（依赖注入等相关）的收集和装配过程、合并依赖注入的属性到beanDefinition
 			if (bp instanceof MergedBeanDefinitionPostProcessor) {
 				MergedBeanDefinitionPostProcessor bdp = (MergedBeanDefinitionPostProcessor) bp;
 				bdp.postProcessMergedBeanDefinition(mbd, beanType, beanName);
@@ -1147,7 +1149,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			return autowireConstructor(beanName, mbd, ctors, args);
 		}
 
-        // 3.有参构造函数的实例化
+        // 3.有参构造器的实例化
 		// Preferred constructors for default construction?
 		ctors = mbd.getPreferredConstructors();
 		if (ctors != null) {
@@ -1225,6 +1227,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected Constructor<?>[] determineConstructorsFromBeanPostProcessors(@Nullable Class<?> beanClass, String beanName)
 			throws BeansException {
 		if (beanClass != null && hasInstantiationAwareBeanPostProcessors()) {
+            // 扩展点的埋点方式-样例2
+            // 遍历所有beanPostProcessor，在bean的实例化关键过程（如构造器实例化过程、IOC依赖注入、AOP实现等），执行埋点操作，达到干预核心流程的目的，
+            // 这里SmartInstantiationAwareBeanPostProcessor的关注点：获取beanClass的候选构造器
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
@@ -1345,7 +1350,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		PropertyValues pvs = (mbd.hasPropertyValues() ? mbd.getPropertyValues() : null);
 
-        // IOC依赖注入的byName和byType入口（基于xml配置文件方式且添加autowire属性进入此分支，如autowire="byName"）
+        // 依赖注入入口1，byName和byType入口（基于xml配置文件方式且添加autowire属性进入此分支，如autowire="byName"）
 		if (mbd.getResolvedAutowireMode() == AUTOWIRE_BY_NAME || mbd.getResolvedAutowireMode() == AUTOWIRE_BY_TYPE) {
 			MutablePropertyValues newPvs = new MutablePropertyValues(pvs);
 			// Add property values based on autowire by name if applicable.
@@ -1373,7 +1378,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				// 重点看这个if代码块
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {
 					InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
-                    // 模板设计模式的应用，IOC依赖注入过程，@Autowired、@Value、@Resource等注解的支持（基于注解的方式进入此分支），如果是field最终会调用依赖类的getBean实例化
+
+                    // 依赖注入入口2，模板设计模式的应用，@Autowired、@Value、@Resource等注解的支持（基于注解的方式进入此分支），如果是field最终会调用依赖类的getBean实例化
 					PropertyValues pvsToUse = ibp.postProcessProperties(pvs, bw.getWrappedInstance(), beanName);
 					if (pvsToUse == null) {
 						if (filteredPds == null) {

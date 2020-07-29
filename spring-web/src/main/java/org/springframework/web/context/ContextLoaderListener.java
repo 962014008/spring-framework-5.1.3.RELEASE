@@ -100,6 +100,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	 */
 	@Override
 	public void contextInitialized(ServletContextEvent event) {
+		// spring容器启动入口
 		initWebApplicationContext(event.getServletContext());
 	}
 
@@ -110,7 +111,7 @@ public class ContextLoaderListener extends ContextLoader implements ServletConte
 	@Override
 	public void contextDestroyed(ServletContextEvent event) {
 		closeWebApplicationContext(event.getServletContext());
+		// spring容器销毁前执行，调用DisposableBean的destroy方法
 		ContextCleanupListener.cleanupAttributes(event.getServletContext());
 	}
-
 }
