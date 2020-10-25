@@ -219,6 +219,7 @@ public class ConfigurationClassPostProcessor implements
         }
         this.registriesPostProcessed.add(registryId);
 
+        // 这里触发注解的收集、解析、注解引入的beanDefinition的注册（@Bean和factory-bean等）
         processConfigBeanDefinitions(registry);
     }
 
@@ -238,6 +239,7 @@ public class ConfigurationClassPostProcessor implements
         if (!this.registriesPostProcessed.contains(factoryId)) {
             // BeanDefinitionRegistryPostProcessor hook apparently not supported...
             // Simply call processConfigurationClasses lazily at this point then.
+            // 这里触发注解的收集、解析、注解引入的beanDefinition的注册（@Bean和factory-bean等）
             processConfigBeanDefinitions((BeanDefinitionRegistry) beanFactory);
         }
 
@@ -248,6 +250,8 @@ public class ConfigurationClassPostProcessor implements
     /**
      * Build and validate a configuration model based on the registry of
      * {@link Configuration} classes.
+     * 扩展点1（前置处理器）的invokeBeanFactoryPostProcessors(beanFactory);
+     * 会调用postProcessBeanFactory和postProcessBeanDefinitionRegistry钩子方法，最终都会调用到这里
      */
     public void processConfigBeanDefinitions(BeanDefinitionRegistry registry) {
         List<BeanDefinitionHolder> configCandidates = new ArrayList<>();
@@ -307,8 +311,12 @@ public class ConfigurationClassPostProcessor implements
         Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
         do {
             // 解析各类注解（递归流程）
+            // @Component注解的支持
+            // @PropertySource注解的支持，加载指定的properties配置文件
             // @ComponentScan注解的支持，最终会调用scanner.doScan方法，与xml解析方式启动的component-scan殊途同归
             // @Import注解的支持，一般应用于需要引用到第三方jar包的类的场景
+            // @ImportResource注解的支持，加载指定的xml配置文件
+            // @Bean注解的处理
             parser.parse(candidates);
             parser.validate();
 

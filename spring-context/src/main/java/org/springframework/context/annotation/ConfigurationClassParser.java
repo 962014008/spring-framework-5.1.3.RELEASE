@@ -369,8 +369,7 @@ class ConfigurationClassParser {
             // Unfortunately, the JVM's standard reflection returns methods in arbitrary
             // order, even between different runs of the same application on the same JVM.
             try {
-                AnnotationMetadata asm =
-                        this.metadataReaderFactory.getMetadataReader(original.getClassName()).getAnnotationMetadata();
+                AnnotationMetadata asm = this.metadataReaderFactory.getMetadataReader(original.getClassName()).getAnnotationMetadata();
                 Set<MethodMetadata> asmMethods = asm.getAnnotatedMethods(Bean.class.getName());
                 if (asmMethods.size() >= beanMethods.size()) {
                     Set<MethodMetadata> selectedMethods = new LinkedHashSet<>(asmMethods.size());
@@ -511,9 +510,7 @@ class ConfigurationClassParser {
     }
 
 
-    private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
-                                Collection<SourceClass> importCandidates, boolean checkForCircularImports) {
-
+    private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass, Collection<SourceClass> importCandidates, boolean checkForCircularImports) {
         if (importCandidates.isEmpty()) {
             return;
         }
@@ -521,6 +518,7 @@ class ConfigurationClassParser {
         if (checkForCircularImports && isChainedImportOnStack(configClass)) {
             this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
         } else {
+            // 栈的作用是后进先出
             this.importStack.push(configClass);
             try {
                 for (SourceClass candidate : importCandidates) {
@@ -534,31 +532,27 @@ class ConfigurationClassParser {
                         } else {
                             String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
                             Collection<SourceClass> importSourceClasses = asSourceClasses(importClassNames);
+                            // 递归调用processImports
                             processImports(configClass, currentSourceClass, importSourceClasses, false);
                         }
                     } else if (candidate.isAssignable(ImportBeanDefinitionRegistrar.class)) {
                         // Candidate class is an ImportBeanDefinitionRegistrar ->
                         // delegate to it to register additional bean definitions
                         Class<?> candidateClass = candidate.loadClass();
-                        ImportBeanDefinitionRegistrar registrar =
-                                BeanUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class);
-                        ParserStrategyUtils.invokeAwareMethods(
-                                registrar, this.environment, this.resourceLoader, this.registry);
+                        ImportBeanDefinitionRegistrar registrar = BeanUtils.instantiateClass(candidateClass, ImportBeanDefinitionRegistrar.class);
+                        ParserStrategyUtils.invokeAwareMethods(registrar, this.environment, this.resourceLoader, this.registry);
                         configClass.addImportBeanDefinitionRegistrar(registrar, currentSourceClass.getMetadata());
                     } else {
                         // Candidate class not an ImportSelector or ImportBeanDefinitionRegistrar ->
                         // process it as an @Configuration class
-                        this.importStack.registerImport(
-                                currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
+                        this.importStack.registerImport(currentSourceClass.getMetadata(), candidate.getMetadata().getClassName());
                         processConfigurationClass(candidate.asConfigClass(configClass));
                     }
                 }
             } catch (BeanDefinitionStoreException ex) {
                 throw ex;
             } catch (Throwable ex) {
-                throw new BeanDefinitionStoreException(
-                        "Failed to process import candidates for configuration class [" +
-                                configClass.getMetadata().getClassName() + "]", ex);
+                throw new BeanDefinitionStoreException("Failed to process import candidates for configuration class [" + configClass.getMetadata().getClassName() + "]", ex);
             } finally {
                 this.importStack.pop();
             }
@@ -711,8 +705,7 @@ class ConfigurationClassParser {
          * @param importSelector the selector to handle
          */
         public void handle(ConfigurationClass configClass, DeferredImportSelector importSelector) {
-            DeferredImportSelectorHolder holder = new DeferredImportSelectorHolder(
-                    configClass, importSelector);
+            DeferredImportSelectorHolder holder = new DeferredImportSelectorHolder(configClass, importSelector);
             if (this.deferredImportSelectors == null) {
                 DeferredImportSelectorGroupingHandler handler = new DeferredImportSelectorGroupingHandler();
                 handler.register(holder);

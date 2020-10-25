@@ -355,7 +355,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
-		// 创建当前bean的切面代理（如果这个bean有advice的话），重点看，重要程度：5
+        // 非常重要
+        // 创建当前bean的切面（如果这个bean有advice的话）
 		// Create proxy if we have advice.
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		// 如果有切面，则生成该bean的代理
