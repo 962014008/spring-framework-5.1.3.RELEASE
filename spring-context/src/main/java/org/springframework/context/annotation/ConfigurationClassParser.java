@@ -141,7 +141,7 @@ class ConfigurationClassParser {
             BeanDefinition bd = holder.getBeanDefinition();
             try {
                 if (bd instanceof AnnotatedBeanDefinition) {
-                    // 看这里
+                    // springboot看这里
                     parse(((AnnotatedBeanDefinition) bd).getMetadata(), holder.getBeanName());
                 } else if (bd instanceof AbstractBeanDefinition && ((AbstractBeanDefinition) bd).hasBeanClass()) {
                     parse(((AbstractBeanDefinition) bd).getBeanClass(), holder.getBeanName());
@@ -214,7 +214,7 @@ class ConfigurationClassParser {
         // Recursively process the configuration class and its superclass hierarchy.
         SourceClass sourceClass = asSourceClass(configClass);
         do {
-            // 看这里
+            // springboot看这里
             sourceClass = doProcessConfigurationClass(configClass, sourceClass);
         }
         while (sourceClass != null);
@@ -273,6 +273,7 @@ class ConfigurationClassParser {
             }
         }
 
+        // springboot看这里，@EnableAutoConfiguration注解的间接支持
         // @Import注解的支持，一般应用于需要引用到第三方jar包的类的场景，递归收集@Import注解
         // Process any @Import annotations
         processImports(configClass, sourceClass, getImports(sourceClass), true);
@@ -527,6 +528,7 @@ class ConfigurationClassParser {
                         Class<?> candidateClass = candidate.loadClass();
                         ImportSelector selector = BeanUtils.instantiateClass(candidateClass, ImportSelector.class);
                         ParserStrategyUtils.invokeAwareMethods(selector, this.environment, this.resourceLoader, this.registry);
+                        // springboot看这里，@EnableAutoConfiguration注解的间接支持，依赖的AutoConfigurationImportSelector.class就属于DeferredImportSelector
                         if (selector instanceof DeferredImportSelector) {
                             this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
                         } else {
@@ -709,6 +711,7 @@ class ConfigurationClassParser {
             if (this.deferredImportSelectors == null) {
                 DeferredImportSelectorGroupingHandler handler = new DeferredImportSelectorGroupingHandler();
                 handler.register(holder);
+                // springboot看这里
                 handler.processGroupImports();
             } else {
                 this.deferredImportSelectors.add(holder);
@@ -752,18 +755,16 @@ class ConfigurationClassParser {
 
         public void processGroupImports() {
             for (DeferredImportSelectorGrouping grouping : this.groupings.values()) {
+                // springboot看这里
                 grouping.getImports().forEach(entry -> {
-                    ConfigurationClass configurationClass = this.configurationClasses.get(
-                            entry.getMetadata());
+                    ConfigurationClass configurationClass = this.configurationClasses.get(entry.getMetadata());
                     try {
-                        processImports(configurationClass, asSourceClass(configurationClass),
-                                asSourceClasses(entry.getImportClassName()), false);
+                        processImports(configurationClass, asSourceClass(configurationClass), asSourceClasses(entry.getImportClassName()), false);
                     } catch (BeanDefinitionStoreException ex) {
                         throw ex;
                     } catch (Throwable ex) {
                         throw new BeanDefinitionStoreException(
-                                "Failed to process import candidates for configuration class [" +
-                                        configurationClass.getMetadata().getClassName() + "]", ex);
+                                "Failed to process import candidates for configuration class [" + configurationClass.getMetadata().getClassName() + "]", ex);
                     }
                 });
             }
@@ -825,8 +826,8 @@ class ConfigurationClassParser {
          */
         public Iterable<Group.Entry> getImports() {
             for (DeferredImportSelectorHolder deferredImport : this.deferredImports) {
-                this.group.process(deferredImport.getConfigurationClass().getMetadata(),
-                        deferredImport.getImportSelector());
+                // springboot看这里
+                this.group.process(deferredImport.getConfigurationClass().getMetadata(), deferredImport.getImportSelector());
             }
             return this.group.selectImports();
         }
