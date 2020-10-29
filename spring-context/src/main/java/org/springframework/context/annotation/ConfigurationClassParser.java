@@ -190,6 +190,7 @@ class ConfigurationClassParser {
 
 
     protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
+        // springboot中@Conditional注解的实现
         if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
             return;
         }
